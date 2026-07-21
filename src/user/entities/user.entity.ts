@@ -11,17 +11,17 @@ export class User {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
+    @Column({ type: 'varchar' })
+    fullName: string;
+
     @Column({ unique: true })
     email: string;
 
-    @Column({ type: 'varchar', nullable: true })
+    @Column({ type: 'varchar', nullable: true, select: false })
     password: string | null;
 
-    @Column({ type: 'varchar', nullable: true, unique: true })
+    @Column({ type: 'varchar', nullable: true, unique: true, select: false })
     googleId: string | null;
-
-    @Column({ type: 'varchar'})
-    fullName: string;
 
     @CreateDateColumn()
     createdAt: Date;
