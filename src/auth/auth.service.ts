@@ -6,6 +6,10 @@ import bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
 import { LoginDto } from './dto/login.dto';
 import { JwtService } from '@nestjs/jwt';
+import { AuthResult } from './interfaces/auth.interface';
+import { SessionMetaData } from './interfaces/session.interface';
+import { SessionService } from './session.service';
+import { metadata } from 'reflect-metadata/no-conflict';
 
 @Injectable()
 export class AuthService {
@@ -13,16 +17,36 @@ export class AuthService {
         @InjectRepository(User)
         private readonly userRepo: Repository<User>,
         private readonly configService: ConfigService,
-        private readonly jwtService: JwtService
+        private readonly jwtService: JwtService,
+        private readonly sessionService: SessionService
     ) { }
 
-    private asserUserActive(user: User): void {
-        if (user.status === UserStatus.SUSPENDED) throw new ForbiddenException("Account is suspended");
+    private asserUserActive(status: UserStatus): void {
+        if (status === UserStatus.SUSPENDED) throw new ForbiddenException("Account is suspended");
 
-        if (user.status === UserStatus.BANNED) throw new ForbiddenException("Account is banned");
+        if (status === UserStatus.BANNED) throw new ForbiddenException("Account is banned");
     }
 
-    async login(payload: LoginDto): Promise<Partial<User> & { accessToken: string }> {
+    private async issueTokens(user: User, metadata: SessionMetaData): Promise<AuthResult> {
+        const { session, refreshToken } = await this.sessionService.createSession(user, metadata);
+
+        const accessToken = this.jwtService.sign({
+            userId: user.id,
+            sessionId: session.id
+        });
+
+        return {
+            user: {
+                id: user.id,
+                fullName: user.fullName,
+                email: user.email
+            },
+            accessToken,
+            refreshToken
+        };
+    }
+
+    async login(payload: LoginDto, metadata: SessionMetaData): Promise<AuthResult> {
         const { email, password } = payload;
 
         try {
@@ -35,8 +59,7 @@ export class AuthService {
                     fullName: true,
                     email: true,
                     password: true,
-                    status: true,
-                    systemRole: true
+                    status: true
                 }
             })
             if (!user || !user.password) {
@@ -48,15 +71,9 @@ export class AuthService {
                 throw new UnauthorizedException("Invalid Credentials!");
             }
 
-            this.asserUserActive(user);
+            this.asserUserActive(user.status);
 
-            const accessToken = this.jwtService.sign({ id: user.id, email: user.email, role: user.systemRole })
-
-            const { password: _password, ...restUser } = user;
-            return {
-                ...restUser,
-                accessToken
-            };
+            return await this.issueTokens(user, metadata)
         } catch (error) {
             throw new InternalServerErrorException("Internal Server Error");
         }
