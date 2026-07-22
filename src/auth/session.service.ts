@@ -4,7 +4,7 @@ import { SessionMetaData } from "./interfaces/session.interface";
 import { UserSession } from "./entities/user-session.entity";
 import { generateToken, hashToken } from "./token.utils";
 import { ConfigService } from "@nestjs/config";
-import { StringValue } from 'ms';
+import ms from "ms";
 import { InjectRepository } from "@nestjs/typeorm";
 import { Repository } from "typeorm";
 
@@ -20,14 +20,13 @@ export class SessionService {
             const rawToken = generateToken();
             const secret = this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
 
-            const expiresIn = (this.configService.getOrThrow<string>('JWT_REFRESH_EXPIRES_IN') || '7d') as StringValue;
+            const expiresIn = ms(this.configService.getOrThrow<string>('JWT_REFRESH_EXPIRES_IN') as ms.StringValue);
 
             const hashedRefreshToken = hashToken(rawToken, secret);
 
             const session = this.sessionRepo.create({
                 user: user,
                 refreshToken: hashedRefreshToken,
-                deviceInfo: metadata.deviceInfo ?? null,
                 ipAddress: metadata.ipAddress ?? null,
                 userAgent: metadata.userAgent ?? null,
                 expiresAt: new Date(Date.now() + expiresIn),

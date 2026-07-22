@@ -28,22 +28,26 @@ export class AuthService {
     }
 
     private async issueTokens(user: User, metadata: SessionMetaData): Promise<AuthResult> {
-        const { session, refreshToken } = await this.sessionService.createSession(user, metadata);
+        try {
+            const { session, refreshToken } = await this.sessionService.createSession(user, metadata);
 
-        const accessToken = this.jwtService.sign({
-            userId: user.id,
-            sessionId: session.id
-        });
+            const accessToken = this.jwtService.sign({
+                userId: user.id,
+                sessionId: session.id
+            });
 
-        return {
-            user: {
-                id: user.id,
-                fullName: user.fullName,
-                email: user.email
-            },
-            accessToken,
-            refreshToken
-        };
+            return {
+                user: {
+                    id: user.id,
+                    fullName: user.fullName,
+                    email: user.email
+                },
+                accessToken,
+                refreshToken
+            };
+        } catch (error) {
+            throw new InternalServerErrorException("Failed to issue tokens")
+        }
     }
 
     async login(payload: LoginDto, metadata: SessionMetaData): Promise<AuthResult> {

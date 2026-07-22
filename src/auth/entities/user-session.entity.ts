@@ -18,9 +18,6 @@ export class UserSession {
   @Column({ name: 'refresh_token', type: 'text' })
   refreshToken: string;
 
-  @Column({ name: 'device_info', type: 'varchar', nullable: true })
-  deviceInfo: string | null;
-
   @Column({ name: 'ip_address', type: 'varchar', nullable: true })
   ipAddress: string | null;
 
