@@ -23,6 +23,9 @@ export class User {
     @PrimaryGeneratedColumn('uuid')
     id: string;
 
+    @Column({ name: 'full_name', type: 'varchar' })
+    fullName: string;
+
     @Column({ unique: true })
     email: string;
 
@@ -34,15 +37,13 @@ export class User {
     password: string | null;
 
     @Column({
+        name: 'google_id',
         type: 'varchar',
         nullable: true,
         unique: true,
         select: false,
     })
     googleId: string | null;
-
-    @Column({ type: 'varchar' })
-    fullName: string;
 
     @Column({
         name: 'system_role',
@@ -56,15 +57,16 @@ export class User {
     status: UserStatus;
 
     @Column({
+        name: 'suspended_reason',
         type: 'varchar',
         nullable: true,
         select: false,
     })
     suspendedReason: string | null;
 
-    @CreateDateColumn()
+    @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;
 
-    @UpdateDateColumn()
+    @UpdateDateColumn({ name: 'updated_at' })
     updatedAt: Date;
 }

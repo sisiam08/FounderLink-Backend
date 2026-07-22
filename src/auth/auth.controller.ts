@@ -9,7 +9,7 @@ export class AuthController {
 
   @Post('signup')
   @HttpCode(HttpStatus.CREATED)
-  async signup(@Body() payload: SignupDto): Promise<Partial<User>> {
+  async signup(@Body() payload: SignupDto): Promise<Pick<User, 'id' | 'fullName' | 'email' | 'status'>> {
     return this.authService.signup(payload);
   }
 }
