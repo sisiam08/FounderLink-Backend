@@ -21,6 +21,18 @@ export enum UserStatus {
     BANNED = 'banned',
 }
 
+export enum SystemRole {
+    USER = 'user',
+    ADMIN = 'admin',
+    SUPER_ADMIN = 'super_admin',
+}
+
+export enum UserStatus {
+    ACTIVE = 'active',
+    SUSPENDED = 'suspended',
+    BANNED = 'banned',
+}
+
 @Entity('users')
 export class User {
     @PrimaryGeneratedColumn('uuid')

@@ -1,4 +1,4 @@
-import { ForbiddenException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import { ConflictException, ForbiddenException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserStatus } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -47,6 +47,37 @@ export class AuthService {
             };
         } catch (error) {
             throw new InternalServerErrorException("Failed to issue tokens")
+        }
+    }
+    
+    async signup(payload: SignupDto): Promise<Partial<User>> {
+        const { fullName, email, password } = payload;
+        try {
+            const existingUser = await this.userRepo.findOne({
+                where: {
+                    email
+                }
+            })
+
+            if (existingUser) {
+                throw new ConflictException("Email already registered!")
+            }
+            const saltRound = Number(this.configService.getOrThrow<number>('SALT_ROUND'));
+
+            const passwordHash = await bcrypt.hash(password, saltRound);
+
+            const newUser = this.userRepo.create({
+                fullName,
+                email,
+                password: passwordHash
+            });
+
+            const data = await this.userRepo.save(newUser);
+
+            const { password: _password, googleId, ...restUser } = data;
+            return restUser;
+        } catch (error) {
+            throw error
         }
     }
 
