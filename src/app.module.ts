@@ -24,8 +24,7 @@ import { AuthModule } from './auth/auth.module';
         connectTimeoutMS: 15000,
       })
     }),
-    AuthModule,
-    ],
+    AuthModule],
   controllers: [AppController],
   providers: [AppService],
 })
