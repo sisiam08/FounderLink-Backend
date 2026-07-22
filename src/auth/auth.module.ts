@@ -6,10 +6,12 @@ import { User } from 'src/user/entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms'
+import { UserSession } from './entities/user-session.entity';
+import { SessionService } from './session.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, UserSession]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -20,9 +22,9 @@ import { StringValue } from 'ms'
           expiresIn: (configService.getOrThrow<string>('JWT_ACCESS_EXPIRES_IN') || '15m') as StringValue,
         }
       })
-    })
+    }),
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [AuthService, SessionService],
 })
 export class AuthModule { }
