@@ -23,6 +23,11 @@ export class AuthController {
     }
 
   }
+  
+   @Post('signup')
+  async signup(@Body() payload: SignupDto): Promise<Pick<User, 'id' | 'fullName' | 'email' | 'status'>> {
+    return this.authService.signup(payload);
+  }
 
   @Post('login')
   async login(@Body() payload: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<Pick<AuthResult, 'user' | 'accessToken'>> {
@@ -36,5 +41,5 @@ export class AuthController {
       accessToken: result.accessToken
     }
 
-  }
+ 
 }

@@ -50,7 +50,7 @@ export class AuthService {
         }
     }
     
-    async signup(payload: SignupDto): Promise<Partial<User>> {
+    async signup(payload: SignupDto): Promise<Pick<User, 'id' | 'fullName' | 'email' | 'status'>> {
         const { fullName, email, password } = payload;
         try {
             const existingUser = await this.userRepo.findOne({
