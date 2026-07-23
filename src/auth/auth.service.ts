@@ -21,7 +21,7 @@ export class AuthService {
         private readonly sessionService: SessionService
     ) { }
 
-    private asserUserActive(status: UserStatus): void {
+    private assertUserActive(status: UserStatus): void {
         if (status === UserStatus.SUSPENDED) throw new ForbiddenException("Account is suspended");
 
         if (status === UserStatus.BANNED) throw new ForbiddenException("Account is banned");
@@ -106,12 +106,30 @@ export class AuthService {
                 throw new UnauthorizedException("Invalid Credentials!");
             }
 
-            this.asserUserActive(user.status);
+            this.assertUserActive(user.status);
 
             return await this.issueTokens(user, metadata);
 
         } catch (error) {
             throw new InternalServerErrorException("Internal Server Error");
+        }
+    }
+
+    async rotateRefreshToken(refreshToken: string): Promise<{ accessToken: string }> {
+        try {
+            const session = await this.sessionService.validateSession(refreshToken);
+            if (session.user) {
+                this.assertUserActive(session.user.status);
+            }
+
+            const accessToken = this.jwtService.sign({
+                userId: session.user.id,
+                sessionId: session.id
+            })
+            return { accessToken }
+
+        } catch (error) {
+            throw error
         }
     }
 }

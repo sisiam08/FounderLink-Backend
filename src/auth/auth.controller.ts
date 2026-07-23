@@ -1,4 +1,4 @@
-import { Body, Controller, Post, Req, Res } from '@nestjs/common';
+import { Body, Controller, Post, Req, Res, UnauthorizedException } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
 import { User } from 'src/user/entities/user.entity';
@@ -43,6 +43,15 @@ export class AuthController {
       user: result.user,
       accessToken: result.accessToken
     }
+  }
+
+  @Post('refresh')
+  async refresh(@Req() req: Request): Promise<{ accessToken: string }> {
+    const refreshToken = req.cookies.refreshToken as string;
+    if (!refreshToken) {
+      throw new UnauthorizedException("Refresh Token Missing");
+    }
+    return await this.authService.rotateRefreshToken(refreshToken);
   }
 
 }
