@@ -1,3 +1,4 @@
+import { Request } from "express";
 import { SystemRole, User, UserStatus } from "src/user/entities/user.entity";
 
 export interface AuthResult {
@@ -16,4 +17,8 @@ export interface AuthenticatedUser {
     sessionId: string;
     systemRole: SystemRole,
     status: UserStatus
+}
+
+export interface AuthenticatedRequest extends Request{
+    user: AuthenticatedUser
 }

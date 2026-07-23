@@ -5,7 +5,7 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { StringValue } from 'ms'
+import { StringValue } from 'ms';
 import { SessionService } from './session.service';
 import { UserSession } from './entities/user-session.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
@@ -22,9 +22,11 @@ import { APP_GUARD } from '@nestjs/core';
         global: true,
         secret: configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
         signOptions: {
-          expiresIn: (configService.getOrThrow<string>('JWT_ACCESS_EXPIRES_IN') || '15m') as StringValue,
-        }
-      })
+          expiresIn: (configService.getOrThrow<string>(
+            'JWT_ACCESS_EXPIRES_IN',
+          ) || '15m') as StringValue,
+        },
+      }),
     }),
   ],
   controllers: [AuthController],
@@ -34,8 +36,8 @@ import { APP_GUARD } from '@nestjs/core';
     JwtStrategy,
     {
       provide: APP_GUARD,
-      useClass: JwtAuthGuard
-    }
+      useClass: JwtAuthGuard,
+    },
   ],
 })
-export class AuthModule { }
+export class AuthModule {}

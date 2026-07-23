@@ -1,4 +1,11 @@
-import { ConflictException, ForbiddenException, Injectable, InternalServerErrorException, UnauthorizedException } from '@nestjs/common';
+import {
+  ConflictException,
+  ForbiddenException,
+  HttpException,
+  Injectable,
+  InternalServerErrorException,
+  UnauthorizedException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserStatus } from 'src/user/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -13,123 +20,151 @@ import { SessionService } from './session.service';
 
 @Injectable()
 export class AuthService {
-    constructor(
-        @InjectRepository(User)
-        private readonly userRepo: Repository<User>,
-        private readonly configService: ConfigService,
-        private readonly jwtService: JwtService,
-        private readonly sessionService: SessionService
-    ) { }
+  constructor(
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    private readonly configService: ConfigService,
+    private readonly jwtService: JwtService,
+    private readonly sessionService: SessionService,
+  ) {}
 
-    private assertUserActive(status: UserStatus): void {
-        if (status === UserStatus.SUSPENDED) throw new ForbiddenException("Account is suspended");
+  private assertUserActive(status: UserStatus): void {
+    if (status === UserStatus.SUSPENDED)
+      throw new ForbiddenException('Account is suspended');
 
-        if (status === UserStatus.BANNED) throw new ForbiddenException("Account is banned");
+    if (status === UserStatus.BANNED)
+      throw new ForbiddenException('Account is banned');
+  }
+
+  private async issueTokens(
+    user: User,
+    metadata: SessionMetaData,
+  ): Promise<AuthResult> {
+    try {
+      const { session, refreshToken } = await this.sessionService.createSession(
+        user,
+        metadata,
+      );
+
+      const accessToken = this.jwtService.sign({
+        userId: user.id,
+        sessionId: session.id,
+      });
+
+      return {
+        user: {
+          id: user.id,
+          fullName: user.fullName,
+          email: user.email,
+        },
+        accessToken,
+        refreshToken,
+      };
+    } catch (error) {
+      throw error;
     }
+  }
 
-    private async issueTokens(user: User, metadata: SessionMetaData): Promise<AuthResult> {
-        try {
-            const { session, refreshToken } = await this.sessionService.createSession(user, metadata);
+  async signup(
+    payload: SignupDto,
+  ): Promise<Pick<User, 'id' | 'fullName' | 'email' | 'status'>> {
+    const { fullName, email, password } = payload;
+    try {
+      const existingUser = await this.userRepo.findOne({
+        where: {
+          email,
+        },
+      });
 
-            const accessToken = this.jwtService.sign({
-                userId: user.id,
-                sessionId: session.id
-            });
+      if (existingUser) {
+        throw new ConflictException('Email already registered!');
+      }
+      const saltRound = Number(
+        this.configService.getOrThrow<number>('SALT_ROUND'),
+      );
 
-            return {
-                user: {
-                    id: user.id,
-                    fullName: user.fullName,
-                    email: user.email
-                },
-                accessToken,
-                refreshToken
-            };
-        } catch (error) {
-            throw new InternalServerErrorException("Failed to issue tokens")
-        }
+      const passwordHash = await bcrypt.hash(password, saltRound);
+
+      const newUser = this.userRepo.create({
+        fullName,
+        email,
+        password: passwordHash,
+      });
+
+      const data = await this.userRepo.save(newUser);
+
+      const { password: _password, googleId, ...restUser } = data;
+      return restUser;
+    } catch (error) {
+      throw error;
     }
+  }
 
-    async signup(payload: SignupDto): Promise<Pick<User, 'id' | 'fullName' | 'email' | 'status'>> {
-        const { fullName, email, password } = payload;
-        try {
-            const existingUser = await this.userRepo.findOne({
-                where: {
-                    email
-                }
-            })
+  async login(
+    payload: LoginDto,
+    metadata: SessionMetaData,
+  ): Promise<AuthResult> {
+    const { email, password } = payload;
 
-            if (existingUser) {
-                throw new ConflictException("Email already registered!")
-            }
-            const saltRound = Number(this.configService.getOrThrow<number>('SALT_ROUND'));
+    try {
+      const user = await this.userRepo.findOne({
+        where: {
+          email,
+        },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          password: true,
+          status: true,
+        },
+      });
+      if (!user || !user.password) {
+        throw new UnauthorizedException('Invalid Credentials!');
+      }
+      const isPasswordValid = await bcrypt.compare(password, user.password!);
 
-            const passwordHash = await bcrypt.hash(password, saltRound);
+      if (!isPasswordValid) {
+        throw new UnauthorizedException('Invalid Credentials!');
+      }
 
-            const newUser = this.userRepo.create({
-                fullName,
-                email,
-                password: passwordHash
-            });
+      this.assertUserActive(user.status);
 
-            const data = await this.userRepo.save(newUser);
-
-            const { password: _password, googleId, ...restUser } = data;
-            return restUser;
-        } catch (error) {
-            throw error
-        }
+      return await this.issueTokens(user, metadata);
+    } catch (error) {
+      throw error;
     }
+  }
 
-    async login(payload: LoginDto, metadata: SessionMetaData): Promise<AuthResult> {
-        const { email, password } = payload;
+  async rotateRefreshToken(
+    refreshToken: string,
+  ): Promise<{ accessToken: string }> {
+    try {
+      const session = await this.sessionService.validateSession(refreshToken);
+      if (session.user) {
+        this.assertUserActive(session.user.status);
+      }
 
-        try {
-            const user = await this.userRepo.findOne({
-                where: {
-                    email
-                },
-                select: {
-                    id: true,
-                    fullName: true,
-                    email: true,
-                    password: true,
-                    status: true
-                }
-            })
-            if (!user || !user.password) {
-                throw new UnauthorizedException("Invalid Credentials!")
-            }
-            const isPasswordValid = await bcrypt.compare(password, user.password!);
-
-            if (!isPasswordValid) {
-                throw new UnauthorizedException("Invalid Credentials!");
-            }
-
-            this.assertUserActive(user.status);
-
-            return await this.issueTokens(user, metadata);
-
-        } catch (error) {
-            throw new InternalServerErrorException("Internal Server Error");
-        }
+      const accessToken = this.jwtService.sign({
+        userId: session.user.id,
+        sessionId: session.id,
+      });
+      return { accessToken };
+    } catch (error) {
+      throw error;
     }
+  }
 
-    async rotateRefreshToken(refreshToken: string): Promise<{ accessToken: string }> {
-        try {
-            const session = await this.sessionService.validateSession(refreshToken);
-            if (session.user) {
-                this.assertUserActive(session.user.status);
-            }
+  async logout(sessionId: string, refreshToken: string): Promise<boolean> {
+    try {
+      const session = await this.sessionService.validateSession(refreshToken);
+      if (session.user) {
+        this.assertUserActive(session.user.status);
+      }
 
-            const accessToken = this.jwtService.sign({
-                userId: session.user.id,
-                sessionId: session.id
-            })
-            return { accessToken }
-
-        } catch (error) {
-            throw error
-        }
+      return await this.sessionService.revokeSession(sessionId);
+    } catch (error) {
+      throw error;
     }
+  }
 }
