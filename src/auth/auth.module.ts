@@ -11,6 +11,7 @@ import { UserSession } from './entities/user-session.entity';
 import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
+import { ActiveUserGuard } from 'src/common/guards/active-user.guard';
 
 @Module({
   imports: [
@@ -22,11 +23,9 @@ import { APP_GUARD } from '@nestjs/core';
         global: true,
         secret: configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
         signOptions: {
-          expiresIn: (configService.getOrThrow<string>(
-            'JWT_ACCESS_EXPIRES_IN',
-          ) || '15m') as StringValue,
-        },
-      }),
+          expiresIn: configService.getOrThrow<string>('JWT_ACCESS_EXPIRES_IN') as StringValue,
+        }
+      })
     }),
   ],
   controllers: [AuthController],
@@ -38,6 +37,10 @@ import { APP_GUARD } from '@nestjs/core';
       provide: APP_GUARD,
       useClass: JwtAuthGuard,
     },
+    {
+      provide: APP_GUARD,
+      useClass: ActiveUserGuard,
+    }
   ],
 })
 export class AuthModule {}
