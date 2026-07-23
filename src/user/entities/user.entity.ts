@@ -2,12 +2,9 @@ import {
     Entity,
     PrimaryGeneratedColumn,
     Column,
-    OneToOne,
-    OneToMany,
     CreateDateColumn,
     UpdateDateColumn,
 } from 'typeorm';
-import { UserSession } from '../../auth/entities/user-session.entity';
 
 export enum SystemRole {
     USER = 'user',
@@ -66,9 +63,6 @@ export class User {
         select: false,
     })
     suspendedReason: string | null;
-
-    @OneToMany(() => UserSession, (session) => session.user)
-    sessions: UserSession[];
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;

@@ -6,12 +6,11 @@ import { User } from 'src/user/entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms'
-import { UserSession } from './entities/user-session.entity';
-import { SessionService } from './session.service';
+import { SessionService } from '../../../session.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserSession]),
+    TypeOrmModule.forFeature([User]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -25,6 +24,6 @@ import { SessionService } from './session.service';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, SessionService],
+  providers: [AuthService],
 })
 export class AuthModule { }
