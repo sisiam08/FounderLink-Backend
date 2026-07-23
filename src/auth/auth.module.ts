@@ -8,6 +8,9 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms'
 import { SessionService } from './session.service';
 import { UserSession } from './entities/user-session.entity';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { APP_GUARD } from '@nestjs/core';
 
 @Module({
   imports: [
@@ -25,6 +28,14 @@ import { UserSession } from './entities/user-session.entity';
     }),
   ],
   controllers: [AuthController],
-  providers: [AuthService, SessionService],
+  providers: [
+    AuthService,
+    SessionService,
+    JwtStrategy,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard
+    }
+  ],
 })
 export class AuthModule { }

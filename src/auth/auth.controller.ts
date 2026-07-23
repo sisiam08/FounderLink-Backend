@@ -7,6 +7,7 @@ import { LoginDto } from './dto/login.dto';
 import type { CookieOptions, Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
+import { Public } from 'src/common/decorators/public.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -27,11 +28,13 @@ export class AuthController {
 
   }
 
+  @Public()
   @Post('signup')
   async signup(@Body() payload: SignupDto): Promise<Pick<User, 'id' | 'fullName' | 'email' | 'status'>> {
     return this.authService.signup(payload);
   }
 
+  @Public()
   @Post('login')
   async login(@Body() payload: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<Pick<AuthResult, 'user' | 'accessToken'>> {
 
@@ -45,6 +48,7 @@ export class AuthController {
     }
   }
 
+  @Public()
   @Post('refresh')
   async refresh(@Req() req: Request): Promise<{ accessToken: string }> {
     const refreshToken = req.cookies.refreshToken as string;
