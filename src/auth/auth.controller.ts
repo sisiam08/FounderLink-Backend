@@ -4,7 +4,7 @@ import { SignupDto } from './dto/signup.dto';
 import { User } from 'src/user/entities/user.entity';
 import { AuthResult } from './interfaces/auth.interface';
 import { LoginDto } from './dto/login.dto';
-import type { CookieOptions, Response } from 'express';
+import type { CookieOptions, Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
 
@@ -33,9 +33,9 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(@Body() payload: LoginDto, @Res({ passthrough: true }) res: Response): Promise<Pick<AuthResult, 'user' | 'accessToken'>> {
+  async login(@Body() payload: LoginDto, @Req() req: Request, @Res({ passthrough: true }) res: Response): Promise<Pick<AuthResult, 'user' | 'accessToken'>> {
 
-    const result = await this.authService.login(payload);
+    const result = await this.authService.login(payload, { ipAddress: req.ip, userAgent: req.get('User-Agent') });
 
     res.cookie('refreshToken', result.refreshToken, this.getCookieOptions())
 

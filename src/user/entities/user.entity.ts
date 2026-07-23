@@ -1,7 +1,9 @@
+import { UserSession } from 'src/auth/entities/user-session.entity';
 import {
     Entity,
     PrimaryGeneratedColumn,
     Column,
+    OneToMany,
     CreateDateColumn,
     UpdateDateColumn,
 } from 'typeorm';
@@ -63,6 +65,9 @@ export class User {
         select: false,
     })
     suspendedReason: string | null;
+
+    @OneToMany(() => UserSession, (session) => session.user)
+    sessions: UserSession[];
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;

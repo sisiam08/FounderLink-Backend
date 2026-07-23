@@ -7,6 +7,9 @@ import { ConfigService } from '@nestjs/config';
 import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResult } from './interfaces/auth.interface';
+import { SessionMetaData } from './interfaces/session.interface';
+import { JwtService } from '@nestjs/jwt';
+import { SessionService } from './session.service';
 
 @Injectable()
 export class AuthService {
@@ -14,12 +17,37 @@ export class AuthService {
         @InjectRepository(User)
         private readonly userRepo: Repository<User>,
         private readonly configService: ConfigService,
+        private readonly jwtService: JwtService,
+        private readonly sessionService: SessionService
     ) { }
 
     private asserUserActive(status: UserStatus): void {
         if (status === UserStatus.SUSPENDED) throw new ForbiddenException("Account is suspended");
 
         if (status === UserStatus.BANNED) throw new ForbiddenException("Account is banned");
+    }
+
+    private async issueTokens(user: User, metadata: SessionMetaData): Promise<AuthResult> {
+        try {
+            const { session, refreshToken } = await this.sessionService.createSession(user, metadata);
+
+            const accessToken = this.jwtService.sign({
+                userId: user.id,
+                sessionId: session.id
+            });
+
+            return {
+                user: {
+                    id: user.id,
+                    fullName: user.fullName,
+                    email: user.email
+                },
+                accessToken,
+                refreshToken
+            };
+        } catch (error) {
+            throw new InternalServerErrorException("Failed to issue tokens")
+        }
     }
 
     async signup(payload: SignupDto): Promise<Pick<User, 'id' | 'fullName' | 'email' | 'status'>> {
@@ -53,7 +81,7 @@ export class AuthService {
         }
     }
 
-    async login(payload: LoginDto): Promise<AuthResult> {
+    async login(payload: LoginDto, metadata: SessionMetaData): Promise<AuthResult> {
         const { email, password } = payload;
 
         try {
@@ -80,11 +108,8 @@ export class AuthService {
 
             this.asserUserActive(user.status);
 
-            return {
-                user: { id: user.id, fullName: user.fullName, email: user.email },
-                accessToken: "",
-                refreshToken: ""
-            }
+            return await this.issueTokens(user, metadata);
+
         } catch (error) {
             throw new InternalServerErrorException("Internal Server Error");
         }

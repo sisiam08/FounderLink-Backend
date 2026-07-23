@@ -6,7 +6,7 @@ import { User } from 'src/user/entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { StringValue } from 'ms'
-import { SessionService } from '../../../session.service';
+import { SessionService } from './session.service';
 
 @Module({
   imports: [
