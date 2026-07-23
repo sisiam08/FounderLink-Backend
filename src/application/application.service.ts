@@ -27,49 +27,6 @@ export class ApplicationService {
     private readonly profileRepo: Repository<Profile>,
   ) {}
 
-  async apply(requirementId: string, userId: string): Promise<Application> {
-    const requirement = await this.requirementRepo.findOne({
-      where: { id: requirementId },
-      relations: { startupIdea: { owner: true } },
-    });
-    if (!requirement) {
-      throw new NotFoundException('Requirement not found');
-    }
-    if (requirement.status !== RequirementStatus.OPEN) {
-      throw new BadRequestException('This requirement is closed');
-    }
-
-    // FR-I2: cannot apply to own requirement
-    if (requirement.startupIdea.owner.id === userId) {
-      throw new BadRequestException('You cannot apply to your own requirement');
-    }
-
-    // FR-F1: duplicate blocked
-    const existing = await this.applicationRepo.findOne({
-      where: { requirement: { id: requirementId }, candidate: { id: userId } },
-    });
-    if (existing) {
-      throw new ConflictException(
-        'You have already applied to this requirement',
-      );
-    }
-
-    const profile = await this.profileRepo.findOne({
-      where: { user: { id: userId } },
-    });
-
-    const score = profile
-      ? computeCompatibility(profile, requirement, requirement.startupIdea)
-      : 0;
-
-    const application = new Application();
-    application.requirement = requirement;
-    application.candidate = { id: userId } as User;
-    application.status = ApplicationStatus.PENDING;
-    application.compatibilityScore = score;
-
-    return this.applicationRepo.save(application);
-  }
 
   async withdraw(applicationId: string, userId: string): Promise<Application> {
     const application = await this.getApplicationWithRelations(applicationId);
@@ -88,7 +45,8 @@ export class ApplicationService {
     application.status = ApplicationStatus.WITHDRAWN;
     return this.applicationRepo.save(application);
   }
-    private async getApplicationWithRelations(
+
+  private async getApplicationWithRelations(
     applicationId: string,
   ): Promise<Application> {
     const application = await this.applicationRepo.findOne({
