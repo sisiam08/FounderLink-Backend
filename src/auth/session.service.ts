@@ -113,4 +113,16 @@ export class SessionService {
       { revoked: true },
     );
   }
+
+  async getActiveSessions(userId: string): Promise<UserSession[]>{
+    return await this.sessionRepo.find({
+      where:{
+        userId,
+        revoked: false
+      },
+      order:{
+        createdAt: 'DESC'
+      }
+    })
+  }
 }

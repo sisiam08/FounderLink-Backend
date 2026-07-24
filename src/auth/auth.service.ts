@@ -27,6 +27,7 @@ import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { StringValue } from 'ms';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { UserSession } from './entities/user-session.entity';
 
 @Injectable()
 export class AuthService {
@@ -391,5 +392,21 @@ export class AuthService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async getActiveSessions(userId: string):Promise<Partial<UserSession>[]>{
+    const sessions = await this.sessionService.getActiveSessions(userId);
+
+    if(sessions.length == 0){
+      throw new NotFoundException("No active sessions found!")
+    }
+    return sessions.map((s)=>({
+      id: s.id,
+      ipAddress: s.ipAddress,
+      userAgent: s.userAgent,
+      expiresAt: s.expiresAt,
+      lastActiveAt: s.lastActiveAt,
+      createdAt: s.createdAt
+    }));
   }
 }

@@ -136,4 +136,9 @@ export class AuthController {
     return this.authService.changePassword(user.userId, user.sessionId, payload);
   }
 
+  @Get('active-sessions')
+  async getActiveSessions(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.getActiveSessions(user.userId);
+  }
+
 }
