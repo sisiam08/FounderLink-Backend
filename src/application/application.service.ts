@@ -90,7 +90,7 @@ export class ApplicationService {
       order: { createdAt: 'DESC' },
     });
   }
-
+  
   async getApplicationsForRequirement(
     requirementId: string,
     userId: string,
@@ -114,6 +114,7 @@ export class ApplicationService {
       order: { createdAt: 'DESC' },
     });
   }
+
 
   private async getApplicationWithRelations(
     applicationId: string,
