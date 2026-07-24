@@ -63,6 +63,25 @@ export class ApplicationService {
     application.status = ApplicationStatus.ACCEPTED;
     return this.applicationRepo.save(application);
   }
+  
+  async reject(applicationId: string, userId: string): Promise<Application> {
+    const application = await this.getApplicationWithRelations(applicationId);
+
+    const ownerId = application.requirement.startupIdea.owner.id;
+    if (ownerId !== userId) {
+      throw new ForbiddenException(
+        'Only the requirement owner can reject applications',
+      );
+    }
+    if (application.status !== ApplicationStatus.PENDING) {
+      throw new BadRequestException(
+        'Only pending applications can be rejected',
+      );
+    }
+
+    application.status = ApplicationStatus.REJECTED;
+    return this.applicationRepo.save(application);
+  }
 
   private async getApplicationWithRelations(
     applicationId: string,
