@@ -5,12 +5,21 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { User } from 'src/user/entities/user.entity';
 import { JwtModule } from '@nestjs/jwt';
 import { ConfigModule, ConfigService } from '@nestjs/config';
-import { StringValue } from 'ms'
+import { StringValue } from 'ms';
 import { SessionService } from './session.service';
+import { UserSession } from './entities/user-session.entity';
+import { JwtStrategy } from './strategies/jwt.strategy';
+import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
+import { APP_GUARD } from '@nestjs/core';
+import { ActiveUserGuard } from 'src/common/guards/active-user.guard';
+import { OTP } from './entities/otp.entity';
+import { MailModule } from 'src/mail/mail.module';
+import { OTPService } from './otp.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User]),
+    TypeOrmModule.forFeature([User, UserSession, OTP]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -18,12 +27,26 @@ import { SessionService } from './session.service';
         global: true,
         secret: configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
         signOptions: {
-          expiresIn: (configService.getOrThrow<string>('JWT_ACCESS_EXPIRES_IN') || '15m') as StringValue,
+          expiresIn: configService.getOrThrow<string>('JWT_ACCESS_EXPIRES_IN') as StringValue,
         }
       })
     }),
+    MailModule
   ],
   controllers: [AuthController],
-  providers: [AuthService],
+  providers: [
+    AuthService,
+    SessionService,
+    OTPService,
+    JwtStrategy,
+    {
+      provide: APP_GUARD,
+      useClass: JwtAuthGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: ActiveUserGuard,
+    }
+  ],
 })
-export class AuthModule { }
+export class AuthModule {}
