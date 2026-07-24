@@ -15,7 +15,7 @@ import { ActiveUserGuard } from 'src/common/guards/active-user.guard';
 import { OTP } from './entities/otp.entity';
 import { MailModule } from 'src/mail/mail.module';
 import { OTPService } from './otp.service';
-import { MailService } from 'src/mail/mail.service';
+import { RolesGuard } from 'src/common/guards/roles.guard';
 
 @Module({
   imports: [
@@ -46,6 +46,10 @@ import { MailService } from 'src/mail/mail.service';
     {
       provide: APP_GUARD,
       useClass: ActiveUserGuard,
+    },
+    {
+      provide: APP_GUARD,
+      useClass: RolesGuard,
     }
   ],
 })

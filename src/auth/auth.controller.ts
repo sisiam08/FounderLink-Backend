@@ -11,7 +11,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
-import { User } from 'src/user/entities/user.entity';
+import { SystemRole, User } from 'src/user/entities/user.entity';
 import type {
   AuthenticatedUser,
   AuthResult,
@@ -26,6 +26,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { Roles } from 'src/common/decorators/roles.decorator';
 
 @Controller('auth')
 export class AuthController {
@@ -140,5 +141,4 @@ export class AuthController {
   async getActiveSessions(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.getActiveSessions(user.userId);
   }
-
 }
