@@ -63,7 +63,7 @@ export class ApplicationService {
     application.status = ApplicationStatus.ACCEPTED;
     return this.applicationRepo.save(application);
   }
-  
+
   async reject(applicationId: string, userId: string): Promise<Application> {
     const application = await this.getApplicationWithRelations(applicationId);
 
@@ -81,6 +81,38 @@ export class ApplicationService {
 
     application.status = ApplicationStatus.REJECTED;
     return this.applicationRepo.save(application);
+  }
+
+  async getMyApplications(userId: string): Promise<Application[]> {
+    return this.applicationRepo.find({
+      where: { candidate: { id: userId } },
+      relations: { requirement: { startupIdea: true } },
+      order: { createdAt: 'DESC' },
+    });
+  }
+
+  async getApplicationsForRequirement(
+    requirementId: string,
+    userId: string,
+  ): Promise<Application[]> {
+    const requirement = await this.requirementRepo.findOne({
+      where: { id: requirementId },
+      relations: { startupIdea: { owner: true } },
+    });
+    if (!requirement) {
+      throw new NotFoundException('Requirement not found');
+    }
+    if (requirement.startupIdea.owner.id !== userId) {
+      throw new ForbiddenException(
+        'Only the requirement owner can view applications',
+      );
+    }
+
+    return this.applicationRepo.find({
+      where: { requirement: { id: requirementId } },
+      relations: { candidate: true },
+      order: { createdAt: 'DESC' },
+    });
   }
 
   private async getApplicationWithRelations(
