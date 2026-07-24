@@ -9,7 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
-import { CofounderRequirement } from '../../requirement/entities/cofounder-requirement.entity';
+//import { CofounderRequirement } from '../../requirement/entities/cofounder-requirement.entity';
 
 export enum StartupStage {
   IDEA = 'idea',
@@ -56,8 +56,8 @@ export class StartupIdea {
   @Column({ type: 'enum', enum: StartupStatus, default: StartupStatus.OPEN })
   status: StartupStatus;
 
-  @OneToMany(() => CofounderRequirement, (req) => req.startupIdea)
-  requirements: CofounderRequirement[];
+  //@OneToMany(() => CofounderRequirement, (req) => req.startupIdea)
+  //requirements: CofounderRequirement[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;
