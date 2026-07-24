@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   ForbiddenException,
   HttpException,
@@ -24,7 +25,8 @@ import { MailService } from 'src/mail/mail.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
-import {StringValue} from 'ms';
+import { StringValue } from 'ms';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Injectable()
 export class AuthService {
@@ -261,49 +263,64 @@ export class AuthService {
     }
   }
 
-  async verifyForgotPasswordOTP(payload: VerifyOtpDto):Promise<{resetToken: string}>{
-    const {email, code} = payload;
+  async verifyForgotPasswordOTP(
+    payload: VerifyOtpDto,
+  ): Promise<{ resetToken: string }> {
+    const { email, code } = payload;
     try {
-      const otp = await this.otpService.verifyOTP(email, code, OtpPurpose.PASSWORD_RESET);
-      
+      const otp = await this.otpService.verifyOTP(
+        email,
+        code,
+        OtpPurpose.PASSWORD_RESET,
+      );
+
       if (!otp) {
         throw new UnauthorizedException('Invalid OTP!');
       }
 
-      const resetToken = this.jwtService.sign({
-        userId: otp.payload.userId,
-        email,
-        purpose: OtpPurpose.PASSWORD_RESET,
-      },{
-        secret: this.configService.getOrThrow<string>('PASSWORD_RESET_TOKEN_SECRET'),
-        expiresIn: this.configService.getOrThrow<string>('PASSWORD_RESET_TOKEN_EXPIRES_IN') as StringValue
-      });
+      const resetToken = this.jwtService.sign(
+        {
+          userId: otp.payload.userId,
+          email,
+          purpose: OtpPurpose.PASSWORD_RESET,
+        },
+        {
+          secret: this.configService.getOrThrow<string>(
+            'PASSWORD_RESET_TOKEN_SECRET',
+          ),
+          expiresIn: this.configService.getOrThrow<string>(
+            'PASSWORD_RESET_TOKEN_EXPIRES_IN',
+          ) as StringValue,
+        },
+      );
 
-      return {resetToken};
+      return { resetToken };
     } catch (error) {
       throw error;
     }
   }
 
-  async resetPassword(payload: ResetPasswordDto): Promise<{message: string}>{
-    const {token, newPassword} = payload;
+  async resetPassword(payload: ResetPasswordDto): Promise<{ message: string }> {
+    const { token, newPassword } = payload;
 
     try {
       const decodeToken = this.jwtService.verify(token, {
-        secret: this.configService.getOrThrow<string>('PASSWORD_RESET_TOKEN_SECRET')  
+        secret: this.configService.getOrThrow<string>(
+          'PASSWORD_RESET_TOKEN_SECRET',
+        ),
       });
 
-      const {userId, email, purpose} = decodeToken;
+      const { userId, email, purpose } = decodeToken;
 
-      if(purpose !== OtpPurpose.PASSWORD_RESET){
-        throw new UnauthorizedException("Invalid reset token!")
+      if (purpose !== OtpPurpose.PASSWORD_RESET) {
+        throw new UnauthorizedException('Invalid reset token!');
       }
       const user = await this.userRepo.findOne({
-        where: {id: userId, email}
-      })
+        where: { id: userId, email },
+      });
 
-      if(!user || user.status !== UserStatus.ACTIVE){
-        throw new UnauthorizedException("Invalid reset token!")
+      if (!user || user.status !== UserStatus.ACTIVE) {
+        throw new UnauthorizedException('Invalid reset token!');
       }
 
       const saltRound = Number(
@@ -312,17 +329,62 @@ export class AuthService {
 
       const passwordHash = await bcrypt.hash(newPassword, saltRound);
 
-      await this.userRepo.update(userId, {password: passwordHash});
+      await this.userRepo.update(userId, { password: passwordHash });
 
-      return {message: "Password reset successful!"};     
-
+      return { message: 'Password reset successful!' };
     } catch (error) {
-      if(error instanceof TokenExpiredError){
-        throw new UnauthorizedException("Token Expired!");
+      if (error instanceof TokenExpiredError) {
+        throw new UnauthorizedException('Token Expired!');
       }
       throw error;
     }
   }
 
-  
+  async changePassword(
+    userId: string,
+    payload: ChangePasswordDto,
+  ): Promise<{ message: string }> {
+    const { currentPassword, newPassword } = payload;
+    if (currentPassword === newPassword) {
+      throw new BadRequestException(
+        "New password can't be same as current password!",
+      );
+    }
+    try {
+      const user = await this.userRepo.findOne({
+        where: { id: userId },
+        select: {
+          id: true,
+          password: true,
+        },
+      });
+
+      if (!user || !user.password) {
+        throw new UnauthorizedException(
+          'Password change not available for this account',
+        );
+      }
+
+      const isCurrentPasswordValid = await bcrypt.compare(
+        currentPassword,
+        user.password,
+      );
+
+      if (!isCurrentPasswordValid) {
+        throw new UnauthorizedException('Current password is incorrect!');
+      }
+
+      const saltRound = Number(
+        this.configService.getOrThrow<string>('SALT_ROUND'),
+      );
+
+      const passwordHash = await bcrypt.hash(newPassword, saltRound);
+
+      await this.userRepo.update(userId, { password: passwordHash });
+
+      return { message: 'Password changed successfully!' };
+    } catch (error) {
+      throw error;
+    }
+  }
 }

@@ -2,6 +2,7 @@ import {
   Body,
   Controller,
   Get,
+  Patch,
   Post,
   Req,
   Res,
@@ -24,6 +25,7 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -127,6 +129,11 @@ export class AuthController {
   @Post('forgot-password/reset')
   async resetPassword(@Body() payload: ResetPasswordDto) {
     return this.authService.resetPassword(payload);
+  }
+
+  @Patch('change-password')
+  async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() payload: ChangePasswordDto) {
+    return this.authService.changePassword(user.userId, payload);
   }
 
 }
