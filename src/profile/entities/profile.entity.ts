@@ -7,7 +7,7 @@ import {
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { User } from '../../user/entities/user.entities';
+import { User } from '../../user/entities/user.entity';
 export enum ProfileRole {
   TECHNICAL = 'technical',
   DESIGN = 'design',
@@ -20,7 +20,7 @@ export class Profile {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => User, (user) => user.profile, { onDelete: 'CASCADE' })
+  //@OneToOne(() => User, (user) => user.profile, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
