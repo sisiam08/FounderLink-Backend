@@ -4,6 +4,7 @@ import {
   HttpException,
   Injectable,
   InternalServerErrorException,
+  NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
@@ -15,12 +16,15 @@ import { SignupDto } from './dto/signup.dto';
 import { LoginDto } from './dto/login.dto';
 import { AuthResult } from './interfaces/auth.interface';
 import { SessionMetaData } from './interfaces/session.interface';
-import { JwtService } from '@nestjs/jwt';
+import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { SessionService } from './session.service';
 import { OTPService } from './otp.service';
 import { OtpPurpose } from './entities/otp.entity';
 import { MailService } from 'src/mail/mail.service';
-import { VerifySignupOtpDto } from './dto/verify-signup-otp.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
+import {StringValue} from 'ms';
 
 @Injectable()
 export class AuthService {
@@ -73,7 +77,7 @@ export class AuthService {
 
   async signup(
     payload: SignupDto,
-  ): Promise<{message: string, expiresAt: Date}> {
+  ): Promise<{ message: string; expiresAt: Date }> {
     const { fullName, email, password } = payload;
     try {
       const existingUser = await this.userRepo.findOne({
@@ -91,42 +95,53 @@ export class AuthService {
 
       const passwordHash = await bcrypt.hash(password, saltRound);
 
-      const {code, expiresAt} = await this.otpService.createOTP(email, OtpPurpose.SIGNUP, {fullName, passwordHash});
+      const { code, expiresAt } = await this.otpService.createOTP(
+        email,
+        OtpPurpose.SIGNUP,
+        { fullName, passwordHash },
+      );
 
-      await this.mailService.sendOTPMail(email, code, OtpPurpose.SIGNUP)
+      await this.mailService.sendOTPMail(email, code, OtpPurpose.SIGNUP);
 
-      return{
-        message: "OTP sent to your email. Verify to complete signup.",
-        expiresAt
-      }
+      return {
+        message: 'OTP sent to your email. Verify to complete signup.',
+        expiresAt,
+      };
     } catch (error) {
       throw error;
     }
   }
 
-  async verifySignupOTP(payload: VerifySignupOtpDto): Promise<Partial<User>>{
-    const {email, code} = payload;
+  async verifySignupOTP(payload: VerifyOtpDto): Promise<Partial<User>> {
+    const { email, code } = payload;
     try {
       const existingUser = await this.userRepo.findOneBy({
-        email
+        email,
       });
 
-      if(existingUser) {
+      if (existingUser) {
         throw new ConflictException('Email already registered!');
       }
 
-      const otp = await this.otpService.verifyOTP(email, OtpPurpose.SIGNUP, code);
-      if(!otp) {
+      const otp = await this.otpService.verifyOTP(
+        email,
+        code,
+        OtpPurpose.SIGNUP,
+      );
+      if (!otp) {
         throw new UnauthorizedException('Invalid OTP!');
       }
 
-      const {fullName, passwordHash} = otp.payload as {fullName: string, passwordHash: string};
+      const { fullName, passwordHash } = otp.payload as {
+        fullName: string;
+        passwordHash: string;
+      };
 
       const user = this.userRepo.create({
         fullName,
         email,
-        password: passwordHash
-      })
+        password: passwordHash,
+      });
 
       const data = await this.userRepo.save(user);
 
@@ -204,4 +219,110 @@ export class AuthService {
       throw error;
     }
   }
+
+  async forgotPassword(
+    payload: ForgotPasswordDto,
+  ): Promise<{ message: string; expiresAt: Date }> {
+    try {
+      const user = await this.userRepo.findOne({
+        where: { email: payload.email },
+        select: {
+          id: true,
+          fullName: true,
+          email: true,
+          password: true,
+          status: true,
+        },
+      });
+
+      if (!user || user.status !== UserStatus.ACTIVE) {
+        throw new NotFoundException('User not found');
+      }
+
+      const { code, expiresAt } = await this.otpService.createOTP(
+        user.email,
+        OtpPurpose.PASSWORD_RESET,
+        { userId: user.id },
+      );
+
+      await this.mailService.sendOTPMail(
+        user.email,
+        code,
+        OtpPurpose.PASSWORD_RESET,
+      );
+
+      return {
+        message:
+          'If you have an active account, an OTP has been sent to your email. Verify to continue.',
+        expiresAt,
+      };
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async verifyForgotPasswordOTP(payload: VerifyOtpDto):Promise<{resetToken: string}>{
+    const {email, code} = payload;
+    try {
+      const otp = await this.otpService.verifyOTP(email, code, OtpPurpose.PASSWORD_RESET);
+      
+      if (!otp) {
+        throw new UnauthorizedException('Invalid OTP!');
+      }
+
+      const resetToken = this.jwtService.sign({
+        userId: otp.payload.userId,
+        email,
+        purpose: OtpPurpose.PASSWORD_RESET,
+      },{
+        secret: this.configService.getOrThrow<string>('PASSWORD_RESET_TOKEN_SECRET'),
+        expiresIn: this.configService.getOrThrow<string>('PASSWORD_RESET_TOKEN_EXPIRES_IN') as StringValue
+      });
+
+      return {resetToken};
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async resetPassword(payload: ResetPasswordDto): Promise<{message: string}>{
+    const {token, newPassword} = payload;
+
+    try {
+      const decodeToken = this.jwtService.verify(token, {
+        secret: this.configService.getOrThrow<string>('PASSWORD_RESET_TOKEN_SECRET')  
+      });
+
+      const {userId, email, purpose} = decodeToken;
+
+      if(purpose !== OtpPurpose.PASSWORD_RESET){
+        throw new UnauthorizedException("Invalid reset token!")
+      }
+      const user = await this.userRepo.findOne({
+        where: {id: userId, email}
+      })
+
+      if(!user || user.status !== UserStatus.ACTIVE){
+        throw new UnauthorizedException("Invalid reset token!")
+      }
+
+      const saltRound = Number(
+        this.configService.getOrThrow<string>('SALT_ROUND'),
+      );
+
+      const passwordHash = await bcrypt.hash(newPassword, saltRound);
+
+      await this.userRepo.update(userId, {password: passwordHash});
+
+      return {message: "Password reset successful!"};     
+
+    } catch (error) {
+      if(error instanceof TokenExpiredError){
+        throw new UnauthorizedException("Token Expired!");
+      }
+      throw error;
+    }
+  }
+
+  
 }

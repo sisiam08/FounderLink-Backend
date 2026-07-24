@@ -21,7 +21,9 @@ import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
-import { VerifySignupOtpDto } from './dto/verify-signup-otp.dto';
+import { VerifyOtpDto } from './dto/verify-otp.dto';
+import { ForgotPasswordDto } from './dto/forgot-password.dto';
+import { ResetPasswordDto } from './dto/reset-password.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -56,7 +58,7 @@ export class AuthController {
 
   @Public()
   @Post('signup/verify-otp')
-  async verifySignupOTP(@Body() payload: VerifySignupOtpDto): Promise<Partial<User>>{
+  async verifySignupOTP(@Body() payload: VerifyOtpDto): Promise<Partial<User>>{
     return this.authService.verifySignupOTP(payload);
   }
 
@@ -108,4 +110,23 @@ export class AuthController {
       message: 'Logout successful',
     };
   }
+
+ @Public()
+  @Post('forgot-password')
+  async forgotPassword(@Body() payload: ForgotPasswordDto) {
+    return this.authService.forgotPassword(payload);
+  }
+
+  @Public()
+  @Post('forgot-password/verify-otp')
+  async verifyForgotPasswordOtp(@Body() payload: VerifyOtpDto) {
+    return this.authService.verifyForgotPasswordOTP(payload);
+  }
+
+  @Public()
+  @Post('forgot-password/reset')
+  async resetPassword(@Body() payload: ResetPasswordDto) {
+    return this.authService.resetPassword(payload);
+  }
+
 }

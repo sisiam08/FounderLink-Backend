@@ -50,7 +50,7 @@ export class OTPService{
         }
     }
 
-    async verifyOTP(email: string, purpose: OtpPurpose, code: string): Promise<OTP>{
+    async verifyOTP(email: string, code: string, purpose: OtpPurpose): Promise<OTP>{
         try {
             const otp = await this.otpRepo.findOne({
                 where:{
