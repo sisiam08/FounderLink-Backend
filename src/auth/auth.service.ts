@@ -331,6 +331,8 @@ export class AuthService {
 
       await this.userRepo.update(userId, { password: passwordHash });
 
+      await this.sessionService.revokeAllSessions(userId);
+
       return { message: 'Password reset successful!' };
     } catch (error) {
       if (error instanceof TokenExpiredError) {
@@ -342,6 +344,7 @@ export class AuthService {
 
   async changePassword(
     userId: string,
+    sessionId: string,
     payload: ChangePasswordDto,
   ): Promise<{ message: string }> {
     const { currentPassword, newPassword } = payload;
@@ -381,6 +384,8 @@ export class AuthService {
       const passwordHash = await bcrypt.hash(newPassword, saltRound);
 
       await this.userRepo.update(userId, { password: passwordHash });
+
+      await this.sessionService.revokeAllSessions(userId, sessionId);
 
       return { message: 'Password changed successfully!' };
     } catch (error) {

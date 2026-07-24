@@ -6,7 +6,7 @@ import { compareToken, generateToken, hashToken } from './token.utils';
 import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
 import { InjectRepository } from '@nestjs/typeorm';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 
 @Injectable()
 export class SessionService {
@@ -101,5 +101,16 @@ export class SessionService {
     }
 
     return true;
+  }
+
+  async revokeAllSessions(userId: string, sessionId?: string): Promise<void> {
+    await this.sessionRepo.update(
+      { 
+        userId, 
+        revoked: false,
+        ...(sessionId ? { id : Not(sessionId)}: {})
+      },
+      { revoked: true },
+    );
   }
 }

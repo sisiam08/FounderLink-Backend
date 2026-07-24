@@ -133,7 +133,7 @@ export class AuthController {
 
   @Patch('change-password')
   async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() payload: ChangePasswordDto) {
-    return this.authService.changePassword(user.userId, payload);
+    return this.authService.changePassword(user.userId, user.sessionId, payload);
   }
 
 }

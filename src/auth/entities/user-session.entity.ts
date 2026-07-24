@@ -4,6 +4,7 @@ import {
   Column,
   ManyToOne,
   CreateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 
@@ -13,7 +14,11 @@ export class UserSession {
   id: string;
 
   @ManyToOne(() => User, (user) => user.sessions, { onDelete: 'CASCADE' })
+  @JoinColumn({name: 'user_id'})
   user: User;
+
+  @Column({ name: 'user_id', type: 'varchar'})
+  userId: string;
 
   @Column({ name: 'refresh_token', type: 'text' })
   refreshToken: string;
