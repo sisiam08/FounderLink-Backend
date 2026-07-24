@@ -82,7 +82,7 @@ export class SessionService {
     }
     const secret = this.configService.getOrThrow<string>('JWT_REFRESH_SECRET');
 
-    const isTokenValid = compareToken(rawToken, secret, session.refreshToken);
+    const isTokenValid = compareToken(rawToken, session.refreshToken, secret);
 
     if (!isTokenValid) {
       throw new UnauthorizedException('Invalid Refresh Token');
