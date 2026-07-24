@@ -12,10 +12,14 @@ import { JwtStrategy } from './strategies/jwt.strategy';
 import { JwtAuthGuard } from 'src/common/guards/jwt-auth.guard';
 import { APP_GUARD } from '@nestjs/core';
 import { ActiveUserGuard } from 'src/common/guards/active-user.guard';
+import { OTP } from './entities/otp.entity';
+import { MailModule } from 'src/mail/mail.module';
+import { OTPService } from './otp.service';
+import { MailService } from 'src/mail/mail.service';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([User, UserSession]),
+    TypeOrmModule.forFeature([User, UserSession, OTP]),
     JwtModule.registerAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
@@ -27,11 +31,13 @@ import { ActiveUserGuard } from 'src/common/guards/active-user.guard';
         }
       })
     }),
+    MailModule
   ],
   controllers: [AuthController],
   providers: [
     AuthService,
     SessionService,
+    OTPService,
     JwtStrategy,
     {
       provide: APP_GUARD,

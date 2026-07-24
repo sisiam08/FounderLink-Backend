@@ -17,6 +17,10 @@ import { AuthResult } from './interfaces/auth.interface';
 import { SessionMetaData } from './interfaces/session.interface';
 import { JwtService } from '@nestjs/jwt';
 import { SessionService } from './session.service';
+import { OTPService } from './otp.service';
+import { OtpPurpose } from './entities/otp.entity';
+import { MailService } from 'src/mail/mail.service';
+import { VerifySignupOtpDto } from './dto/verify-signup-otp.dto';
 
 @Injectable()
 export class AuthService {
@@ -26,6 +30,8 @@ export class AuthService {
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
     private readonly sessionService: SessionService,
+    private readonly otpService: OTPService,
+    private readonly mailService: MailService,
   ) {}
 
   private assertUserActive(status: UserStatus): void {
@@ -67,7 +73,7 @@ export class AuthService {
 
   async signup(
     payload: SignupDto,
-  ): Promise<Pick<User, 'id' | 'fullName' | 'email' | 'status'>> {
+  ): Promise<{message: string, expiresAt: Date}> {
     const { fullName, email, password } = payload;
     try {
       const existingUser = await this.userRepo.findOne({
@@ -85,15 +91,47 @@ export class AuthService {
 
       const passwordHash = await bcrypt.hash(password, saltRound);
 
-      const newUser = this.userRepo.create({
-        fullName,
-        email,
-        password: passwordHash,
+      const {code, expiresAt} = await this.otpService.createOTP(email, OtpPurpose.SIGNUP, {fullName, passwordHash});
+
+      await this.mailService.sendOTPMail(email, code, OtpPurpose.SIGNUP)
+
+      return{
+        message: "OTP sent to your email. Verify to complete signup.",
+        expiresAt
+      }
+    } catch (error) {
+      throw error;
+    }
+  }
+
+  async verifySignupOTP(payload: VerifySignupOtpDto): Promise<Partial<User>>{
+    const {email, code} = payload;
+    try {
+      const existingUser = await this.userRepo.findOneBy({
+        email
       });
 
-      const data = await this.userRepo.save(newUser);
+      if(existingUser) {
+        throw new ConflictException('Email already registered!');
+      }
+
+      const otp = await this.otpService.verifyOTP(email, OtpPurpose.SIGNUP, code);
+      if(!otp) {
+        throw new UnauthorizedException('Invalid OTP!');
+      }
+
+      const {fullName, passwordHash} = otp.payload as {fullName: string, passwordHash: string};
+
+      const user = this.userRepo.create({
+        fullName,
+        email,
+        password: passwordHash
+      })
+
+      const data = await this.userRepo.save(user);
 
       const { password: _password, googleId, ...restUser } = data;
+
       return restUser;
     } catch (error) {
       throw error;
@@ -105,7 +143,6 @@ export class AuthService {
     metadata: SessionMetaData,
   ): Promise<AuthResult> {
     const { email, password } = payload;
-
     try {
       const user = await this.userRepo.findOne({
         where: {

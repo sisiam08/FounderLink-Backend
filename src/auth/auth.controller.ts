@@ -21,6 +21,7 @@ import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
 import { Public } from 'src/common/decorators/public.decorator';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { VerifySignupOtpDto } from './dto/verify-signup-otp.dto';
 
 @Controller('auth')
 export class AuthController {
@@ -49,8 +50,14 @@ export class AuthController {
   @Post('signup')
   async signup(
     @Body() payload: SignupDto,
-  ): Promise<Pick<User, 'id' | 'fullName' | 'email' | 'status'>> {
+  ): Promise<{message: string, expiresAt: Date}> {
     return this.authService.signup(payload);
+  }
+
+  @Public()
+  @Post('signup/verify-otp')
+  async verifySignupOTP(@Body() payload: VerifySignupOtpDto): Promise<Partial<User>>{
+    return this.authService.verifySignupOTP(payload);
   }
 
   @Public()
