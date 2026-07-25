@@ -5,7 +5,7 @@ import {
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Message } from './entities/message.entity';
-import { Repository } from 'typeorm';
+import { Not, Repository } from 'typeorm';
 import { SendMessageDto } from './dto/send-message.dto';
 import {
   Application,
@@ -51,6 +51,10 @@ export class MessageService {
       const ownerId = application.requirement.startupIdea.owner.id;
       const candidateId = application.candidate.id;
 
+      console.log(userId);
+      console.log(ownerId);
+      console.log(candidateId);
+
       if (userId !== ownerId && userId !== candidateId) {
         throw new ForbiddenException(
           'You are not authorized to access this conversation',
@@ -64,34 +68,37 @@ export class MessageService {
   }
 
   async sendMessage(
-    applicationId: string,
     userId: string,
-    content: SendMessageDto,
+    payload: SendMessageDto,
   ): Promise<Message> {
-    const message = this.messageRepo.create({
-      application: { id: applicationId } as Application,
-      sender: { id: userId } as User,
-      content: content.content,
-      isRead: false,
-    });
-    const savedMessage = await this.messageRepo.save(message);
+    const { applicationId, content } = payload;
+    try {
+      const message = this.messageRepo.create({
+        application: { id: applicationId } as Application,
+        sender: { id: userId } as User,
+        content: content,
+        isRead: false,
+      });
+      const savedMessage = await this.messageRepo.save(message);
 
-    this.eventEmitter.emit('new.message', {
-      applicationId,
-      message: {
-        id: savedMessage.id,
-        content: savedMessage.content,
-        senderId: savedMessage.sender.id,
-        createdAt: savedMessage.createdAt,
-      },
-    });
+      this.eventEmitter.emit('new.message', {
+        applicationId,
+        message: {
+          id: savedMessage.id,
+          content: savedMessage.content,
+          senderId: savedMessage.sender.id,
+          createdAt: savedMessage.createdAt,
+        },
+      });
 
-    return savedMessage;
+      return savedMessage;
+    } catch (error) {
+      throw error;
+    }
   }
 
   async getMessages(applicationId: string, userId: string): Promise<Message[]> {
     await this.assertRoomAccess(applicationId, userId);
-    console.log("from service get messages");
     return this.messageRepo.find({
       where: { application: { id: applicationId } },
       relations: { sender: true },

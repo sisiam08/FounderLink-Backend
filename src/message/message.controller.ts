@@ -7,15 +7,6 @@ import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 export class MessageController {
   constructor(private readonly messageService: MessageService) { }
 
-  @Post(':applicationId')
-  async sendMessage(
-    @Param('applicationId') applicationId: string,
-    @Body() content: SendMessageDto,
-    @CurrentUser("userId") userId: string
-  ) {
-    return await this.messageService.sendMessage(applicationId, userId, content);
-  }
-
   @Get(':applicationId')
   async getMessages(
     @Param('applicationId') applicationId: string,

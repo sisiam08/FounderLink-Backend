@@ -2,13 +2,14 @@ import { UnauthorizedException } from "@nestjs/common";
 import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
-import { ConnectedSocket, MessageBody, OnGatewayConnection, OnGatewayDisconnect, SubscribeMessage, WebSocketGateway, WebSocketServer } from "@nestjs/websockets";
+import { ConnectedSocket, MessageBody, OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer, WsException } from "@nestjs/websockets";
 import { Server } from "socket.io";
 import { User, UserStatus } from "src/user/entities/user.entity";
 import { Repository } from "typeorm";
 import type { AuthenticatedSocket } from "./interfaces/socket.interface";
 import { MessageService } from "./message.service";
 import { OnEvent } from "@nestjs/event-emitter";
+import { SendMessageDto } from "./dto/send-message.dto";
 
 @WebSocketGateway({
     namespace: '/chat'
@@ -24,7 +25,7 @@ export class MessageGateway implements OnGatewayConnection {
         private readonly messageService: MessageService
     ) { }
 
-    private createRoom(applicationId: string){
+    private createRoom(applicationId: string) {
         return `application: ${applicationId}`;
     }
 
@@ -50,7 +51,7 @@ export class MessageGateway implements OnGatewayConnection {
                     status: true
                 }
             })
-            if(!user || user.status !== UserStatus.ACTIVE){
+            if (!user || user.status !== UserStatus.ACTIVE) {
                 throw new UnauthorizedException("User not found or account is not active")
             }
 
@@ -65,8 +66,8 @@ export class MessageGateway implements OnGatewayConnection {
     }
 
     @SubscribeMessage('join-room')
-    async handleJoinRoom(@MessageBody() applicationId: string, @ConnectedSocket() client: AuthenticatedSocket){
-        if(!client.data.joinedApplications.has(applicationId)){
+    async handleJoinRoom(@MessageBody() applicationId: string, @ConnectedSocket() client: AuthenticatedSocket) {
+        if (!client.data.joinedApplications.has(applicationId)) {
             void await this.messageService.assertRoomAccess(applicationId, client.data.userId);
             client.data.joinedApplications.add(applicationId);
         }
@@ -75,18 +76,62 @@ export class MessageGateway implements OnGatewayConnection {
     }
 
     @SubscribeMessage('leave-room')
-    handleLeaveRoom(@MessageBody() applicationId: string, @ConnectedSocket() client: AuthenticatedSocket){
+    handleLeaveRoom(@MessageBody() applicationId: string, @ConnectedSocket() client: AuthenticatedSocket) {
         const room = this.createRoom(applicationId);
         void client.leave(room);
     }
 
+    @SubscribeMessage('send-message')
+    async handleSendMessage(
+        @MessageBody() payload: SendMessageDto,
+        @ConnectedSocket() client: AuthenticatedSocket,
+    ): Promise<{ success: boolean; message?: Record<string, unknown>; error?: string }> {
+        const userId = client.data.userId;
+
+        if (!userId) {
+            throw new WsException("User not authenticated")
+        }
+
+        const { applicationId, content } = payload;
+
+        if (!applicationId || !content?.trim()) {
+            return { success: false, error: 'applicationId and content are required' };
+        }
+        if (!client.data.joinedApplications.has(applicationId)) {
+            throw new WsException("You are not in the room");
+        }
+
+        try {
+            const message = await this.messageService.sendMessage(
+                userId,
+                payload
+            );
+
+            return {
+                success: true,
+                message: {
+                    id: message.id,
+                    content: message.content,
+                    senderId: userId,
+                    createdAt: message.createdAt,
+                },
+            };
+        } catch (error) {
+            if (error instanceof WsException) {
+        throw error;
+    }
+
+    throw new WsException("Failed to send message");
+        }
+    }
+
     @OnEvent('new.message')
-    emitNewMessage(applicationId: string, messages:{
-        id:string,
+    emitNewMessage(applicationId: string, messages: {
+        id: string,
         content: string,
         senderId: string,
         createdAt: Date
-    }){
+    }) {
         const room = this.createRoom(applicationId);
         this.server.to(room).emit('new-message', messages);
     }
