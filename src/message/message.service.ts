@@ -2,7 +2,6 @@ import {
   ForbiddenException,
   Injectable,
   NotAcceptableException,
-  UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Message } from './entities/message.entity';
@@ -23,41 +22,45 @@ export class MessageService {
     @InjectRepository(Application)
     private readonly applicationRepo: Repository<Application>,
     private readonly eventEmitter: EventEmitter2,
-  ) {}
+  ) { }
 
   async assertRoomAccess(
     applicationId: string,
     userId: string,
   ): Promise<Application> {
-    const application = await this.applicationRepo
-      .createQueryBuilder('app')
-      .leftJoin('app.candidate', 'candidate')
-      .leftJoin('app.requirement', 'requirement')
-      .leftJoin('requirement.startupIdea', 'startup')
-      .leftJoin('startup.owner', 'owner')
-      .select(['app.id', 'app.status', 'candidate.id', 'owner.id'])
-      .where('app.id = :id', { id: applicationId })
-      .getOne();
+    try {
+      const application = await this.applicationRepo
+        .createQueryBuilder('app')
+        .leftJoin('app.candidate', 'candidate')
+        .leftJoin('app.requirement', 'requirement')
+        .leftJoin('requirement.startupIdea', 'startup')
+        .leftJoin('startup.owner', 'owner')
+        .select(['app.id', 'app.status', 'candidate.id', 'requirement.id', 'startup.id', 'owner.id'])
+        .where('app.id = :id', { id: applicationId })
+        .getOne();
 
-    if (!application) {
-      throw new NotAcceptableException('Application not found!');
+      if (!application) {
+        throw new NotAcceptableException('Application not found!');
+      }
+      if (application.status !== ApplicationStatus.ACCEPTED) {
+        throw new ForbiddenException(
+          'Messaging is only available for accepted applications',
+        );
+      }
+
+      const ownerId = application.requirement.startupIdea.owner.id;
+      const candidateId = application.candidate.id;
+
+      if (userId !== ownerId && userId !== candidateId) {
+        throw new ForbiddenException(
+          'You are not authorized to access this conversation',
+        );
+      }
+
+      return application;
+    } catch (error) {
+      throw error;
     }
-    if (application.status !== ApplicationStatus.ACCEPTED) {
-      throw new ForbiddenException(
-        'Messaging is only available for accepted applications',
-      );
-    }
-
-    const ownerId = application.requirement.startupIdea.owner.id;
-    const candidateId = application.candidate.id;
-
-    if (userId !== ownerId && userId !== candidateId) {
-      throw new ForbiddenException(
-        'You are not authorized to access this conversation',
-      );
-    }
-
-    return application;
   }
 
   async sendMessage(
@@ -72,7 +75,7 @@ export class MessageService {
       isRead: false,
     });
     const savedMessage = await this.messageRepo.save(message);
-    
+
     this.eventEmitter.emit('new.message', {
       applicationId,
       message: {
@@ -84,5 +87,15 @@ export class MessageService {
     });
 
     return savedMessage;
+  }
+
+  async getMessages(applicationId: string, userId: string): Promise<Message[]> {
+    await this.assertRoomAccess(applicationId, userId);
+    console.log("from service get messages");
+    return this.messageRepo.find({
+      where: { application: { id: applicationId } },
+      relations: { sender: true },
+      order: { createdAt: 'ASC' },
+    });
   }
 }

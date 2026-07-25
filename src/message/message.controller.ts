@@ -1,4 +1,4 @@
-import { Body, Controller, Param, Post } from '@nestjs/common';
+import { Body, Controller, Get, Param, Post } from '@nestjs/common';
 import { MessageService } from './message.service';
 import { SendMessageDto } from './dto/send-message.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
@@ -14,5 +14,13 @@ export class MessageController {
     @CurrentUser("userId") userId: string
   ) {
     return await this.messageService.sendMessage(applicationId, userId, content);
+  }
+
+  @Get(':applicationId')
+  async getMessages(
+    @Param('applicationId') applicationId: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.messageService.getMessages(applicationId, userId);
   }
 }
