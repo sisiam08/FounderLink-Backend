@@ -115,4 +115,38 @@ export class MessageService {
       { isRead: true },
     );
   }
+
+  async getUnreadCount(userId: string): Promise<number> {
+    const [mine, received] = await Promise.all([
+      this.applicationRepo.find({
+        where: {
+          candidate: { id: userId },
+          status: ApplicationStatus.ACCEPTED,
+        },
+        select: { id: true },
+      }),
+      this.applicationRepo.find({
+        where: {
+          requirement: { startupIdea: { owner: { id: userId } } },
+          status: ApplicationStatus.ACCEPTED,
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    console.log("CountMine: ", mine.length);
+    console.log("CountReceived: ", received.length);
+
+    const acceptedIds = [...mine, ...received].map((a) => a.id);
+    if (acceptedIds.length === 0) return 0;
+
+    const count = this.messageRepo
+      .createQueryBuilder('m')
+      .where('m.application_id IN (:...ids)', { ids: acceptedIds })
+      .andWhere('m.sender_id != :userId', { userId })
+      .andWhere('m.is_read = false')
+      .getCount();
+
+    return count;
+  }
 }

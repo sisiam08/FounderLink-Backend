@@ -1,12 +1,17 @@
-import { Body, Controller, Get, Param, Post } from '@nestjs/common';
+import { Controller, Get, Param, Post } from '@nestjs/common';
 import { MessageService } from './message.service';
-import { SendMessageDto } from './dto/send-message.dto';
 import { CurrentUser } from 'src/common/decorators/current-user.decorator';
 
 @Controller('message')
 export class MessageController {
   constructor(private readonly messageService: MessageService) { }
 
+  @Get('unread-count')
+  async getUnreadCount(@CurrentUser('userId') userId: string) {
+    const count = await this.messageService.getUnreadCount(userId);
+    return { count };
+  }
+  
   @Get(':applicationId')
   async getMessages(
     @Param('applicationId') applicationId: string,
@@ -14,4 +19,5 @@ export class MessageController {
   ) {
     return this.messageService.getMessages(applicationId, userId);
   }
+
 }
