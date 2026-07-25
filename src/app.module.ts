@@ -6,6 +6,11 @@ import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { MessageModule } from './message/message.module';
+import { APP_GUARD } from '@nestjs/core';
+import { JwtAuthGuard } from './common/guards/jwt-auth.guard';
+import { ActiveUserGuard } from './common/guards/active-user.guard';
+import { RolesGuard } from './common/guards/roles.guard';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -26,6 +31,7 @@ import { MessageModule } from './message/message.module';
         connectTimeoutMS: 15000,
       })
     }),
+    EventEmitterModule.forRoot(),
     AuthModule,
     MailModule,
     MessageModule

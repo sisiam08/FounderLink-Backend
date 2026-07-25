@@ -7,6 +7,8 @@ import { Server } from "socket.io";
 import { User, UserStatus } from "src/user/entities/user.entity";
 import { Repository } from "typeorm";
 import type { AuthenticatedSocket } from "./interfaces/socket.interface";
+import { MessageService } from "./message.service";
+import { OnEvent } from "@nestjs/event-emitter";
 
 @WebSocketGateway({
     namespace: '/chat'
@@ -18,8 +20,13 @@ export class MessageGateway implements OnGatewayConnection {
     constructor(private readonly jwtService: JwtService,
         private readonly configService: ConfigService,
         @InjectRepository(User)
-        private readonly userRepo: Repository<User>
+        private readonly userRepo: Repository<User>,
+        private readonly messageService: MessageService
     ) { }
+
+    private createRoom(applicationId: string){
+        return `application: ${applicationId}`;
+    }
 
     async handleConnection(client: AuthenticatedSocket) {
         try {
@@ -47,8 +54,9 @@ export class MessageGateway implements OnGatewayConnection {
                 throw new UnauthorizedException("User not found or account is not active")
             }
 
-            client.data.userId= payload.userId;
+            client.data.userId = payload.userId;
             client.data.sessionId = payload.sessionId;
+            client.data.joinedApplications = new Set<string>;
 
         } catch (error) {
             void client.disconnect();
@@ -57,14 +65,29 @@ export class MessageGateway implements OnGatewayConnection {
     }
 
     @SubscribeMessage('join-room')
-    handleJoinRoom(@MessageBody() applicationId: string, @ConnectedSocket() client: AuthenticatedSocket){
-        const room = `application: ${applicationId}`;
+    async handleJoinRoom(@MessageBody() applicationId: string, @ConnectedSocket() client: AuthenticatedSocket){
+        if(!client.data.joinedApplications.has(applicationId)){
+            void await this.messageService.assertRoomAccess(applicationId, client.data.userId);
+            client.data.joinedApplications.add(applicationId);
+        }
+        const room = this.createRoom(applicationId);
         void client.join(room);
     }
 
     @SubscribeMessage('leave-room')
     handleLeaveRoom(@MessageBody() applicationId: string, @ConnectedSocket() client: AuthenticatedSocket){
-        const room = `application: ${applicationId}`;
+        const room = this.createRoom(applicationId);
         void client.leave(room);
+    }
+
+    @OnEvent('new.message')
+    emitNewMessage(applicationId: string, messages:{
+        id:string,
+        content: string,
+        senderId: string,
+        createdAt: Date
+    }){
+        const room = this.createRoom(applicationId);
+        this.server.to(room).emit('new-message', messages);
     }
 }

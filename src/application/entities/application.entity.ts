@@ -32,6 +32,9 @@ export class Application {
   @JoinColumn({ name: 'candidate_id' })
   candidate: User;
 
+  @Column({ name: 'candidate_id' })
+  candidateId: string;
+
   @Column({
     type: 'enum',
     enum: ApplicationStatus,
