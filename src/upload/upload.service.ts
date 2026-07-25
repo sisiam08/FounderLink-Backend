@@ -25,4 +25,27 @@ export class UploadService {
       1024 *
       1024;
   }
+  async uploadPhoto(
+    userId: string,
+    file: Express.Multer.File,
+  ): Promise<Profile> {
+    const profile = await this.profileRepo.findOne({
+      where: { user: { id: userId } },
+    });
+    if (!profile) {
+      throw new NotFoundException('Profile not found');
+    }
+
+    // Delete previous photo if it exists
+    if (profile.photoUrl) {
+      const oldPath = path.join(process.cwd(), profile.photoUrl);
+      if (fs.existsSync(oldPath)) {
+        fs.unlinkSync(oldPath);
+      }
+    }
+
+    const photoUrl = `/uploads/profile-photos/${file.filename}`;
+    profile.photoUrl = photoUrl;
+    return this.profileRepo.save(profile);
+  }
 }
