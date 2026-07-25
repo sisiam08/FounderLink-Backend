@@ -105,4 +105,14 @@ export class MessageService {
       order: { createdAt: 'ASC' },
     });
   }
+
+  async markAsRead(applicationId: string, userId: string): Promise<void> {
+    await this.messageRepo.update(
+      {
+        application: { id: applicationId },
+        sender: { id: Not(userId) },
+      },
+      { isRead: true },
+    );
+  }
 }

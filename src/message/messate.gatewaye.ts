@@ -73,6 +73,7 @@ export class MessageGateway implements OnGatewayConnection {
         }
         const room = this.createRoom(applicationId);
         void client.join(room);
+        await this.messageService.markAsRead(applicationId, client.data.userId);
     }
 
     @SubscribeMessage('leave-room')
