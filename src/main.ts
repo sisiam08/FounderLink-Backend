@@ -1,24 +1,28 @@
 import { NestFactory } from '@nestjs/core';
+import { ValidationPipe, Logger } from '@nestjs/common';
 import { AppModule } from './app.module';
-import { ValidationPipe } from '@nestjs/common';
-import cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
-  
-  app.use(cookieParser());
+  const app = await NestFactory.create(AppModule, { bufferLogs: true });
 
-  app.useGlobalPipes(new ValidationPipe({
-    whitelist: true,
-    forbidNonWhitelisted: true,
-    transform: true
-  }));
+  app.useGlobalPipes(
+    new ValidationPipe({
+      whitelist: true,
+      forbidNonWhitelisted: true,
+      transform: true,
+    }),
+  );
 
-  app.useGlobalInterceptors(new ResponseInterceptor());
   app.useGlobalFilters(new HttpExceptionFilter());
+  app.useGlobalInterceptors(new ResponseInterceptor());
 
-  await app.listen(process.env.PORT ?? 5000);
+  app.enableCors();
+
+  const port = process.env.PORT ?? 3000;
+  await app.listen(port);
+  new Logger('Bootstrap').log(`Application running on port ${port}`);
 }
-bootstrap();
+
+void bootstrap();
