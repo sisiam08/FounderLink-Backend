@@ -11,7 +11,12 @@ export class MessageController {
     const count = await this.messageService.getUnreadCount(userId);
     return { count };
   }
-  
+
+   @Get('unread-each-application')
+  async getUnreadByApplication(@CurrentUser('userId') userId: string) {
+    return this.messageService.getUnreadEachApplication(userId);
+  }
+
   @Get(':applicationId')
   async getMessages(
     @Param('applicationId') applicationId: string,
@@ -19,6 +24,5 @@ export class MessageController {
   ) {
     return this.messageService.getMessages(applicationId, userId);
   }
-
 
 }

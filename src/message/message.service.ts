@@ -150,4 +150,27 @@ export class MessageService {
 
     return count;
   }
+
+  async getUnreadEachApplication(
+    userId: string,
+  ): Promise<Record<string, number>> {
+    const acceptedIds = await this.getAcceptedApplicationIds(userId);
+    if (acceptedIds.length === 0) return {};
+
+    const rows = await this.messageRepo
+      .createQueryBuilder('m')
+      .select('m.application_id', 'applicationId')
+      .addSelect('COUNT(*)', 'count')
+      .where('m.application_id IN (:...ids)', { ids: acceptedIds })
+      .andWhere('m.sender_id != :userId', { userId })
+      .andWhere('m.is_read = false')
+      .groupBy('m.application_id')
+      .getRawMany();
+
+    const result: Record<string, number> = {};
+    for (const { applicationId, count } of rows) {
+      result[applicationId] = parseInt(count, 10);
+    }
+    return result;
+  }
 }
