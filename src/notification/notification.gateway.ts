@@ -6,6 +6,7 @@ import { OnGatewayConnection, WebSocketGateway, WebSocketServer } from "@nestjs/
 import { Server, Socket } from "socket.io";
 import { User, UserStatus } from "src/user/entities/user.entity";
 import { Repository } from "typeorm";
+import { Notification } from "./entities/notification.entity";
 
 @WebSocketGateway({
     namespace: '/notification'
@@ -62,12 +63,7 @@ export class NotificationGateway implements OnGatewayConnection {
         }
     }
 
-    emitNotification(userId: string, notification: {
-        id: string,
-        type: string,
-        data: Record<string, unknown>
-
-    }) {
+    emitNotification(userId: string, notification: Notification) {
         const room = this.createRoom(userId);
         this.server.to(room).emit('new-notification', notification);
     }
