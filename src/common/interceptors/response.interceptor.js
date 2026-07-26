@@ -8,16 +8,14 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.ResponseInterceptor = void 0;
 const common_1 = require("@nestjs/common");
-const rxjs_1 = require("rxjs");
+const operators_1 = require("rxjs/operators");
 let ResponseInterceptor = class ResponseInterceptor {
     intercept(context, next) {
-        return next.handle().pipe((0, rxjs_1.map)((data) => {
-            return {
-                success: true,
-                data,
-                timestamp: new Date().toISOString()
-            };
-        }));
+        return next.handle().pipe((0, operators_1.map)((data) => ({
+            success: true,
+            data,
+            timestamp: new Date().toISOString(),
+        })));
     }
 };
 exports.ResponseInterceptor = ResponseInterceptor;
