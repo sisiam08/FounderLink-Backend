@@ -13,7 +13,6 @@ export class NotificationService {
     ) { }
 
     async sendNotification(userId: string, type: NotificationType, payload: Record<string, unknown>): Promise<Notification>{
-        
         const notification = this.notificationRepo.create({
             user: { id: userId },
             type,
@@ -26,7 +25,19 @@ export class NotificationService {
         void this.notificationGateway.emitNotification(userId, savedNotification);
 
         return savedNotification;       
+    }
 
+    async getAllNotificationsByUser(userId: string):Promise<Notification[]>{
+        const notifications = await this.notificationRepo.find({
+            where: {
+                user:{id: userId}
+            },
+            order:{
+                createdAt:'DESC'
+            }
+        })
+        
+        return notifications;
     }
 
 }
