@@ -9,7 +9,7 @@ import {
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
-//import { CofounderRequirement } from '../../requirement/entities/cofounder-requirement.entity';
+import { CofounderRequirement } from '../../requirement/entities/cofounder-requirement.entity';
 
 export enum StartupStage {
   IDEA = 'idea',
@@ -29,14 +29,14 @@ export class StartupIdea {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  //@ManyToOne(() => User, (user) => user.startupIdeas, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.startupIdeas, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'owner_id' })
   owner: User;
 
-  @Column({ length: 160 })
+  @Column({ type: 'varchar', length: 160 })
   title: string;
 
-  @Column({ name: 'short_description', length: 255 })
+  @Column({ name: 'short_description', type: 'varchar', length: 255 })
   shortDescription: string;
 
   @Column({ name: 'full_description', type: 'text' })
@@ -56,8 +56,8 @@ export class StartupIdea {
   @Column({ type: 'enum', enum: StartupStatus, default: StartupStatus.OPEN })
   status: StartupStatus;
 
-  //@OneToMany(() => CofounderRequirement, (req) => req.startupIdea)
-  //requirements: CofounderRequirement[];
+  @OneToMany(() => CofounderRequirement, (req) => req.startupIdea)
+  requirements: CofounderRequirement[];
 
   @CreateDateColumn({ name: 'created_at' })
   createdAt: Date;

@@ -2,11 +2,13 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
+  OneToOne,
   JoinColumn,
   CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
+
 export enum ProfileRole {
   TECHNICAL = 'technical',
   DESIGN = 'design',
@@ -19,7 +21,7 @@ export class Profile {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  //@OneToOne(() => User, (user) => user.profile, { onDelete: 'CASCADE' })
+  @OneToOne(() => User, (user) => user.profile, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
@@ -43,19 +45,20 @@ export class Profile {
   @Column({ name: 'available_weekly_commitment', default: 10 })
   availableWeeklyCommitment: number;
 
-  @Column({ name: 'portfolio_url', nullable: true })
+  // Change: explicitly define the column type for nullable string fields so TypeORM can build PostgreSQL metadata correctly.
+  @Column({ name: 'portfolio_url', type: 'varchar', nullable: true })
   portfolioUrl: string | null;
 
-  @Column({ name: 'github_url', nullable: true })
+  @Column({ name: 'github_url', type: 'varchar', nullable: true })
   githubUrl: string | null;
 
-  @Column({ name: 'linkedin_url', nullable: true })
+  @Column({ name: 'linkedin_url', type: 'varchar', nullable: true })
   linkedinUrl: string | null;
 
-  @Column({ nullable: true })
+  @Column({ type: 'varchar', nullable: true })
   location: string | null;
 
-  @Column({ name: 'photo_url', nullable: true })
+  @Column({ name: 'photo_url', type: 'varchar', nullable: true })
   photoUrl: string | null;
 
   @CreateDateColumn({ name: 'created_at' })

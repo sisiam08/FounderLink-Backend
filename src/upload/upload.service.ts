@@ -25,7 +25,9 @@ export class UploadService {
       1024 *
       1024;
   }
-  async uploadPhoto(
+
+
+   async uploadPhoto(
     userId: string,
     file: Express.Multer.File,
   ): Promise<Profile> {

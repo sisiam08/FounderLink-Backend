@@ -1,18 +1,19 @@
 import { createParamDecorator, ExecutionContext } from '@nestjs/common';
 import { Request } from 'express';
 
+export interface RequestUser {
+  userId: string;
+  sessionId: string;
+  systemRole: string;
+  status: string;
+}
+
 interface AuthenticatedRequest extends Request {
-  user?: {
-    userId: string;
-    sessionId: string;
-  };
+  user?: RequestUser;
 }
 
 export const CurrentUser = createParamDecorator(
-  (
-    data: keyof { userId: string; sessionId: string } | undefined,
-    ctx: ExecutionContext,
-  ) => {
+  (data: keyof RequestUser | undefined, ctx: ExecutionContext) => {
     const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
     if (!user) {
