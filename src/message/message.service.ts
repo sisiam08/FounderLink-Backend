@@ -22,7 +22,7 @@ export class MessageService {
     @InjectRepository(Application)
     private readonly applicationRepo: Repository<Application>,
     private readonly eventEmitter: EventEmitter2,
-  ) { }
+  ) {}
 
   async assertRoomAccess(
     applicationId: string,
@@ -35,7 +35,14 @@ export class MessageService {
         .leftJoin('app.requirement', 'requirement')
         .leftJoin('requirement.startupIdea', 'startup')
         .leftJoin('startup.owner', 'owner')
-        .select(['app.id', 'app.status', 'candidate.id', 'requirement.id', 'startup.id', 'owner.id'])
+        .select([
+          'app.id',
+          'app.status',
+          'candidate.id',
+          'requirement.id',
+          'startup.id',
+          'owner.id',
+        ])
         .where('app.id = :id', { id: applicationId })
         .getOne();
 
@@ -67,7 +74,7 @@ export class MessageService {
     }
   }
 
-    async getAcceptedApplicationIds(userId: string): Promise<string[]> {
+  async getAcceptedApplicationIds(userId: string): Promise<string[]> {
     const [mine, received] = await Promise.all([
       this.applicationRepo.find({
         where: {
@@ -88,10 +95,7 @@ export class MessageService {
     return [...mine, ...received].map((a) => a.id);
   }
 
-  async sendMessage(
-    userId: string,
-    payload: SendMessageDto,
-  ): Promise<Message> {
+  async sendMessage(userId: string, payload: SendMessageDto): Promise<Message> {
     const { applicationId, content } = payload;
     try {
       const message = this.messageRepo.create({
@@ -172,5 +176,88 @@ export class MessageService {
       result[applicationId] = parseInt(count, 10);
     }
     return result;
+  }
+
+  async getConversations(userId: string) {
+    const applications = await this.applicationRepo
+      .createQueryBuilder('app')
+      .leftJoinAndSelect('app.candidate', 'candidate')
+      .leftJoinAndSelect('app.requirement', 'requirement')
+      .leftJoinAndSelect('requirement.startupIdea', 'startup')
+      .leftJoinAndSelect('startup.owner', 'owner')
+      .where('app.status = :status', { status: ApplicationStatus.ACCEPTED })
+      .andWhere('(candidate.id = :userId OR owner.id = :userId)', { userId })
+      .select([
+        'app.id',
+        'candidate.id',
+        'candidate.fullName',
+        'owner.id',
+        'owner.fullName',
+        'startup.id',
+        'startup.title',
+        'requirement.id',
+      ])
+      .getMany();
+
+    if (applications.length === 0) return [];
+
+    const applicationIds = applications.map((a) => a.id);
+
+    const lastMessages = await this.messageRepo
+      .createQueryBuilder('m')
+      .select(
+        'DISTINCT ON (m.application_id) m.application_id',
+        'applicationId',
+      )
+      .addSelect('m.id', 'id')
+      .addSelect('m.content', 'content')
+      .addSelect('m.sender_id', 'senderId')
+      .addSelect('m.is_read', 'isRead')
+      .addSelect('m.created_at', 'createdAt')
+      .where('m.application_id IN (:...ids)', { ids: applicationIds })
+      .orderBy('m.application_id')
+      .addOrderBy('m.created_at', 'DESC')
+      .getRawMany();
+
+    const lastMessageMap = new Map<string, (typeof lastMessages)[0]>();
+    for (const msg of lastMessages) {
+      lastMessageMap.set(msg.applicationId, msg);
+    }
+
+    const unreadMap = await this.getUnreadEachApplication(userId);
+
+    const conversationList = applications.map((app) => {
+      const isOwner = app.requirement.startupIdea.owner.id === userId;
+      const otherUser = isOwner
+        ? app.candidate
+        : app.requirement.startupIdea.owner;
+      const lastMsg = lastMessageMap.get(app.id);
+
+      return {
+        applicationId: app.id,
+        startupTitle: app.requirement.startupIdea.title,
+        otherUser: {
+          id: otherUser.id,
+          fullName: otherUser.fullName,
+          photo: otherUser.profile.photoUrl,
+        },
+        lastMessage: lastMsg
+          ? {
+              id: lastMsg.id,
+              content: lastMsg.content,
+              senderId: lastMsg.senderId,
+              isRead: lastMsg.isRead,
+              createdAt: lastMsg.createdAt,
+            }
+          : null,
+        unreadCount: unreadMap[app.id] ?? 0,
+      };
+    });
+
+    return conversationList.sort(
+      (a, b) =>
+        new Date(b.lastMessage?.createdAt ?? 0).getTime() -
+        new Date(a.lastMessage?.createdAt ?? 0).getTime(),
+    );
   }
 }
