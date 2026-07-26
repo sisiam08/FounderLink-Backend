@@ -9,5 +9,14 @@ export class ProfileController {
     private readonly profileService: ProfileService,
   ) {}
 
-
+@Post()
+  createProfile(
+    @CurrentUser('userId') userId: string,
+    @Body() createProfileDto: CreateProfileDto,
+  ) {
+    return this.profileService.createProfile(
+      userId,
+      createProfileDto,
+    );
+  }
 }
