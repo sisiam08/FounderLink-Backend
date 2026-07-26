@@ -7,6 +7,7 @@ import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
 import { MessageModule } from './message/message.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -30,7 +31,8 @@ import { EventEmitterModule } from '@nestjs/event-emitter';
     EventEmitterModule.forRoot(),
     AuthModule,
     MailModule,
-    MessageModule
+    MessageModule,
+    NotificationModule
   ],
   controllers: [AppController],
   providers: [AppService],

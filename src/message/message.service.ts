@@ -13,6 +13,9 @@ import {
 } from 'src/application/entities/application.entity';
 import { User } from 'src/user/entities/user.entity';
 import { EventEmitter2 } from '@nestjs/event-emitter';
+import { NotificationGateway } from 'src/notification/notification.gateway';
+import { NotificationService } from 'src/notification/notification.service';
+import { NotificationType } from 'src/notification/entities/notification.entity';
 
 @Injectable()
 export class MessageService {
@@ -22,6 +25,8 @@ export class MessageService {
     @InjectRepository(Application)
     private readonly applicationRepo: Repository<Application>,
     private readonly eventEmitter: EventEmitter2,
+    private readonly notificationService: NotificationService,
+    private readonly notificationGateway: NotificationGateway
   ) { }
 
   async assertRoomAccess(
@@ -67,7 +72,7 @@ export class MessageService {
     }
   }
 
-    async getAcceptedApplicationIds(userId: string): Promise<string[]> {
+  async getAcceptedApplicationIds(userId: string): Promise<string[]> {
     const [mine, received] = await Promise.all([
       this.applicationRepo.find({
         where: {
@@ -111,6 +116,36 @@ export class MessageService {
           createdAt: savedMessage.createdAt,
         },
       });
+
+      const application = await this.applicationRepo.findOne({
+        where: { id: applicationId },
+        relations: { requirement: { startupIdea: { owner: { profile: true } } }, candidate: { profile: true } },
+      });
+
+      if (!application) {
+        throw new Error('Application not found');
+      }
+
+      const ownerId = application.requirement.startupIdea.owner.id;
+      const candidateId = application.candidate.id;
+
+      const recipientId = ownerId === userId ? candidateId : ownerId;
+      const senderName = ownerId === userId ? application.requirement.startupIdea.owner.fullName : application.candidate.fullName;
+      const senderImage = ownerId === userId ? application.requirement.startupIdea.owner.profile.photoUrl : application.candidate.profile.photoUrl;
+
+      await this.notificationService.sendNotification(recipientId, NotificationType.NEW_MESSAGE, {
+        applicationId: applicationId,
+        messagePreview: content.slice(0, 100),
+        senderId: userId,
+        senderName: senderName,
+        senderImage: senderImage
+      })
+
+      const unreadCountSender = await this.getUnreadCount(userId);
+      this.notificationGateway.emitUnreadCount(userId, unreadCountSender);
+
+      const unreadCountRecipient = await this.getUnreadCount(recipientId);
+      this.notificationGateway.emitUnreadCount(recipientId, unreadCountRecipient);
 
       return savedMessage;
     } catch (error) {
