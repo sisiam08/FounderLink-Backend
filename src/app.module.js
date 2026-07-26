@@ -8,46 +8,39 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AppModule = void 0;
 const common_1 = require("@nestjs/common");
-const app_controller_1 = require("./app.controller");
-const app_service_1 = require("./app.service");
 const config_1 = require("@nestjs/config");
 const typeorm_1 = require("@nestjs/typeorm");
-const auth_module_1 = require("./auth/auth.module");
-const mail_module_1 = require("./mail/mail.module");
-const message_module_1 = require("./message/message.module");
-const event_emitter_1 = require("@nestjs/event-emitter");
-const notification_module_1 = require("./notification/notification.module");
+const serve_static_1 = require("@nestjs/serve-static");
+const path_1 = require("path");
+const logging_middleware_1 = require("./common/middleware/logging.middleware");
+const requirement_module_1 = require("./requirement/requirement.module");
 let AppModule = class AppModule {
+    configure(consumer) {
+        consumer.apply(logging_middleware_1.LoggingMiddleware).forRoutes('*');
+    }
 };
 exports.AppModule = AppModule;
 exports.AppModule = AppModule = __decorate([
     (0, common_1.Module)({
         imports: [
-            config_1.ConfigModule.forRoot({
-                isGlobal: true
-            }),
+            config_1.ConfigModule.forRoot({ isGlobal: true }),
             typeorm_1.TypeOrmModule.forRootAsync({
                 imports: [config_1.ConfigModule],
                 inject: [config_1.ConfigService],
                 useFactory: (configService) => ({
                     type: 'postgres',
-                    url: configService.getOrThrow('DATABASE_URL'),
+                    url: configService.get('DATABASE_URL'),
                     autoLoadEntities: true,
-                    synchronize: configService.getOrThrow('NODE_ENV') !== 'production',
-                    ssl: true,
-                    retryAttempts: 3,
-                    retryDelay: 3000,
-                    connectTimeoutMS: 15000,
-                })
+                    synchronize: configService.get('NODE_ENV') !== 'production',
+                    logging: configService.get('NODE_ENV') === 'development',
+                }),
             }),
-            event_emitter_1.EventEmitterModule.forRoot(),
-            auth_module_1.AuthModule,
-            mail_module_1.MailModule,
-            message_module_1.MessageModule,
-            notification_module_1.NotificationModule
+            serve_static_1.ServeStaticModule.forRoot({
+                rootPath: (0, path_1.join)(__dirname, '..', 'uploads'),
+                serveRoot: '/uploads',
+            }),
+            requirement_module_1.RequirementModule,
         ],
-        controllers: [app_controller_1.AppController],
-        providers: [app_service_1.AppService],
     })
 ], AppModule);
 //# sourceMappingURL=app.module.js.map

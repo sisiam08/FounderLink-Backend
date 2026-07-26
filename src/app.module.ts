@@ -1,40 +1,34 @@
-import { Module } from '@nestjs/common';
-import { AppController } from './app.controller';
-import { AppService } from './app.service';
+import { Module, MiddlewareConsumer } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-import { AuthModule } from './auth/auth.module';
-import { MailModule } from './mail/mail.module';
-import { MessageModule } from './message/message.module';
-import { EventEmitterModule } from '@nestjs/event-emitter';
-import { NotificationModule } from './notification/notification.module';
+import { ServeStaticModule } from '@nestjs/serve-static';
+import { join } from 'path';
+import { LoggingMiddleware } from './common/middleware/logging.middleware';
+import { RequirementModule } from './requirement/requirement.module';
 
 @Module({
   imports: [
-    ConfigModule.forRoot({
-      isGlobal: true
-    }),
+    ConfigModule.forRoot({ isGlobal: true }),
     TypeOrmModule.forRootAsync({
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (configService: ConfigService) => ({
-        type: 'postgres',
-        url: configService.getOrThrow<string>('DATABASE_URL'),
+        type: 'postgres' as const,
+        url: configService.get<string>('DATABASE_URL'),
         autoLoadEntities: true,
-        synchronize: configService.getOrThrow<string>('NODE_ENV') !== 'production',
-        ssl: true,
-        retryAttempts: 3,
-        retryDelay: 3000,
-        connectTimeoutMS: 15000,
-      })
+        synchronize: configService.get<string>('NODE_ENV') !== 'production',
+        logging: configService.get<string>('NODE_ENV') === 'development',
+      }),
     }),
-    EventEmitterModule.forRoot(),
-    AuthModule,
-    MailModule,
-    MessageModule,
-    NotificationModule
+    ServeStaticModule.forRoot({
+      rootPath: join(__dirname, '..', 'uploads'),
+      serveRoot: '/uploads',
+    }),
+    RequirementModule,
   ],
-  controllers: [AppController],
-  providers: [AppService],
 })
-export class AppModule { }
+export class AppModule {
+  configure(consumer: MiddlewareConsumer) {
+    consumer.apply(LoggingMiddleware).forRoutes('*');
+  }
+}
