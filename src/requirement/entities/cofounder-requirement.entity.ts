@@ -23,6 +23,7 @@ export class CofounderRequirement {
   @ManyToOne(() => StartupIdea, (idea) => idea.requirements, {
     onDelete: 'CASCADE',
   })
+  @JoinColumn({ name: 'startup_idea_id' })
   startupIdea: StartupIdea;
 
   @Column({ name: 'required_role', type: 'enum', enum: ProfileRole })
