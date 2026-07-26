@@ -12,7 +12,7 @@ export class NotificationService {
         private readonly notificationGateway: NotificationGateway,
     ) { }
 
-    async sendNotification(userId: string, type: NotificationType, payload: Record<string, unknown>): Promise<Notification>{
+    async sendNotification(userId: string, type: NotificationType, payload: Record<string, unknown>): Promise<Notification> {
         const notification = this.notificationRepo.create({
             user: { id: userId },
             type,
@@ -24,20 +24,31 @@ export class NotificationService {
 
         void this.notificationGateway.emitNotification(userId, savedNotification);
 
-        return savedNotification;       
+        return savedNotification;
     }
 
-    async getAllNotificationsByUser(userId: string):Promise<Notification[]>{
+    async getAllNotificationsByUser(userId: string): Promise<Notification[]> {
         const notifications = await this.notificationRepo.find({
             where: {
-                user:{id: userId}
+                user: { id: userId }
             },
-            order:{
-                createdAt:'DESC'
+            order: {
+                createdAt: 'DESC'
             }
         })
-        
+
         return notifications;
+    }
+
+    async markAsRead(notificationId: string, userId: string): Promise<void> {
+        const notification = await this.notificationRepo.findOne({
+            where: { id: notificationId, user: { id: userId } },
+        });
+        if (!notification) {
+            return;
+        }
+        notification.isRead = true;
+        await this.notificationRepo.save(notification);
     }
 
 }
