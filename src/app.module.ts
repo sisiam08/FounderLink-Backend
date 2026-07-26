@@ -5,6 +5,8 @@ import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
+import { MessageModule } from './message/message.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
 
 @Module({
   imports: [
@@ -25,8 +27,10 @@ import { MailModule } from './mail/mail.module';
         connectTimeoutMS: 15000,
       })
     }),
+    EventEmitterModule.forRoot(),
     AuthModule,
-    MailModule
+    MailModule,
+    MessageModule
   ],
   controllers: [AppController],
   providers: [AppService],

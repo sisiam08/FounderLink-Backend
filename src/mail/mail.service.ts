@@ -15,8 +15,8 @@ export class MailService {
 
         this.transporter = nodemailer.createTransport({
             host: this.configService.getOrThrow<string>('SMTP_HOST'),
-            port: Number(this.configService.getOrThrow<number>('SMTP_PORT')),
-            secure: Boolean(this.configService.getOrThrow<boolean>('SMTP_SECURE')),
+            port: Number(this.configService.getOrThrow<string>('SMTP_PORT')),
+            secure: Boolean(this.configService.getOrThrow<string>('SMTP_SECURE')),
             auth: {
                 user: this.configService.getOrThrow<string>('SMTP_USER'),
                 pass: this.configService.getOrThrow<string>('SMTP_PASS'),
@@ -58,7 +58,6 @@ export class MailService {
         } catch (error) {
             if (error instanceof HttpException) throw error;
             throw new InternalServerErrorException('Failed to send OTP email')
-
         }
 
     }
