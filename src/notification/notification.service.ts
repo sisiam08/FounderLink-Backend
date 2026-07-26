@@ -22,7 +22,7 @@ export class NotificationService {
 
         const savedNotification = await this.notificationRepo.save(notification);
 
-        void this.notificationGateway.emitNotification(userId, savedNotification);
+        this.notificationGateway.emitNotification(userId, savedNotification);
 
         return savedNotification;
     }

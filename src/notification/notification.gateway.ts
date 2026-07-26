@@ -63,8 +63,18 @@ export class NotificationGateway implements OnGatewayConnection {
         }
     }
 
-    emitNotification(userId: string, notification: Notification) {
+    emitNotification(userId: string, notification: Notification): void {
         const room = this.createRoom(userId);
         this.server.to(room).emit('new-notification', notification);
+    }
+
+    emitUnreadCount(userId: string, count: number): void {
+        const room = this.createRoom(userId);
+        this.server.to(room).emit('unread-count', count);
+    }
+
+    emitPendingCount(userId: string, count: number): void {
+        const room = this.createRoom(userId);
+        this.server.to(room).emit('pending-count', count);
     }
 }

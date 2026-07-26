@@ -25,7 +25,8 @@ export class MessageService {
     @InjectRepository(Application)
     private readonly applicationRepo: Repository<Application>,
     private readonly eventEmitter: EventEmitter2,
-    private readonly notificationService: NotificationService
+    private readonly notificationService: NotificationService,
+    private readonly notificationGateway: NotificationGateway
   ) { }
 
   async assertRoomAccess(
@@ -139,6 +140,12 @@ export class MessageService {
         senderName: senderName,
         senderImage: senderImage
       })
+
+      const unreadCountSender = await this.getUnreadCount(userId);
+      this.notificationGateway.emitUnreadCount(userId, unreadCountSender);
+
+      const unreadCountRecipient = await this.getUnreadCount(recipientId);
+      this.notificationGateway.emitUnreadCount(recipientId, unreadCountRecipient);
 
       return savedMessage;
     } catch (error) {
