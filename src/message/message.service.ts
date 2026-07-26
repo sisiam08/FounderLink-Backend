@@ -67,6 +67,27 @@ export class MessageService {
     }
   }
 
+    async getAcceptedApplicationIds(userId: string): Promise<string[]> {
+    const [mine, received] = await Promise.all([
+      this.applicationRepo.find({
+        where: {
+          candidate: { id: userId },
+          status: ApplicationStatus.ACCEPTED,
+        },
+        select: { id: true },
+      }),
+      this.applicationRepo.find({
+        where: {
+          requirement: { startupIdea: { owner: { id: userId } } },
+          status: ApplicationStatus.ACCEPTED,
+        },
+        select: { id: true },
+      }),
+    ]);
+
+    return [...mine, ...received].map((a) => a.id);
+  }
+
   async sendMessage(
     userId: string,
     payload: SendMessageDto,
@@ -117,27 +138,7 @@ export class MessageService {
   }
 
   async getUnreadCount(userId: string): Promise<number> {
-    const [mine, received] = await Promise.all([
-      this.applicationRepo.find({
-        where: {
-          candidate: { id: userId },
-          status: ApplicationStatus.ACCEPTED,
-        },
-        select: { id: true },
-      }),
-      this.applicationRepo.find({
-        where: {
-          requirement: { startupIdea: { owner: { id: userId } } },
-          status: ApplicationStatus.ACCEPTED,
-        },
-        select: { id: true },
-      }),
-    ]);
-
-    console.log("CountMine: ", mine.length);
-    console.log("CountReceived: ", received.length);
-
-    const acceptedIds = [...mine, ...received].map((a) => a.id);
+    const acceptedIds = await this.getAcceptedApplicationIds(userId);
     if (acceptedIds.length === 0) return 0;
 
     const count = this.messageRepo
