@@ -17,6 +17,11 @@ export class MessageController {
     return this.messageService.getUnreadEachApplication(userId);
   }
 
+  @Get('conversations')
+  async getConversations(@CurrentUser('userId') userId: string) {
+    return this.messageService.getConversations(userId);
+  }
+
   @Get(':applicationId')
   async getMessages(
     @Param('applicationId') applicationId: string,
