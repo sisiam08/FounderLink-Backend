@@ -16,7 +16,7 @@ exports.MailService = void 0;
 const common_1 = require("@nestjs/common");
 const config_1 = require("@nestjs/config");
 const nodemailer_1 = __importDefault(require("nodemailer"));
-const otp_entity_1 = require("../../../../src/auth/entities/otp.entity");
+const otp_entity_1 = require("../auth/entities/otp.entity");
 let MailService = class MailService {
     configService;
     transporter = null;

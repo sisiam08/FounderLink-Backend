@@ -2,7 +2,7 @@ import { HttpException, Injectable, InternalServerErrorException } from '@nestjs
 import { ConfigService } from '@nestjs/config';
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
-import { OtpPurpose } from 'src/auth/entities/otp.entity';
+import { OtpPurpose } from '../auth/entities/otp.entity';
 
 @Injectable()
 export class MailService {
