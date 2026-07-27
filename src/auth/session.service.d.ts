@@ -1,4 +1,4 @@
-import { User } from "../../../../src/user/entities/user.entity";
+import { User } from '../user/entities/user.entity';
 import { SessionMetaData } from './interfaces/session.interface';
 import { UserSession } from './entities/user-session.entity';
 import { ConfigService } from '@nestjs/config';
