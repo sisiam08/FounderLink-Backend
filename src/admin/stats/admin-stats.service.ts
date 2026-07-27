@@ -40,7 +40,6 @@ export class AdminStatsService {
     @InjectRepository(UserSession)
     private readonly sessionRepo: Repository<UserSession>,
   ) {}
-
   async getOverview() {
     const [
       users,
@@ -85,46 +84,6 @@ export class AdminStatsService {
     };
   }
 
-  async getUserSignups(from?: string, to?: string) {
-    const qb = this.userRepo
-      .createQueryBuilder('user')
-      .select('DATE(user.createdAt)', 'date')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('DATE(user.createdAt)')
-      .orderBy('DATE(user.createdAt)', 'ASC');
-
-    if (from) qb.andWhere('user.createdAt >= :from', { from });
-    if (to) qb.andWhere('user.createdAt <= :to', { to });
-
-    return qb.getRawMany();
-  }
-
-  async getApplicationStats() {
-    const statusRows: RawCountRow[] = await this.applicationRepo
-      .createQueryBuilder('app')
-      .select('app.status', 'status')
-      .addSelect('COUNT(*)', 'count')
-      .groupBy('app.status')
-      .getRawMany();
-
-    const avgRow: RawAvgRow | undefined = await this.applicationRepo
-      .createQueryBuilder('app')
-      .select('AVG(app.compatibilityScore)', 'avg')
-      .getRawOne();
-
-    return {
-      byStatus: statusRows.reduce(
-        (acc, row) => {
-          acc[row.status] = parseInt(row.count, 10);
-          return acc;
-        },
-        {} as Record<string, number>,
-      ),
-      averageCompatibilityScore: avgRow?.avg
-        ? Math.round(parseFloat(avgRow.avg))
-        : 0,
-    };
-  }
 
   async getRequirementStats() {
     const openCount = await this.requirementRepo.count({
