@@ -1,5 +1,5 @@
 import { Request } from "express";
-import { SystemRole, User, UserStatus } from "../../../../../src/user/entities/user.entity";
+import { SystemRole, User, UserStatus } from "../../user/entities/user.entity";
 export interface AuthResult {
     user: Pick<User, 'id' | 'fullName' | 'email'>;
     accessToken: string;
