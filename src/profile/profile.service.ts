@@ -4,6 +4,7 @@ import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { Profile } from './entities/profile.entity';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Injectable()
 export class ProfileService {
@@ -73,7 +74,16 @@ async getMyProfile(userId: string): Promise<Profile> {
 }
 
 
+async updateMyProfile(
+  userId: string,
+    updateProfileDto: UpdateProfileDto,
+): Promise<Profile>{
+   const profile = await this.getMyProfile(userId);
 
+      Object.assign(profile, updateProfileDto);
+
+  return await this.profileRepo.save(profile);
+}
 
 
 }

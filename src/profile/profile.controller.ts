@@ -1,7 +1,8 @@
-import { Body, Controller, Post,Get } from '@nestjs/common';
+import { Body, Controller, Post,Get,Patch } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { ProfileService } from './profile.service';
+import { UpdateProfileDto } from './dto/update-profile.dto';
 
 @Controller('profile')
 export class ProfileController {
@@ -27,6 +28,18 @@ getMyProfile(
 ) {
   return this.profileService.getMyProfile(userId);
 }
+
+@Patch('me')
+updateMyProfile(
+    @CurrentUser('userId') userId: string,
+  @Body() updateProfileDto: UpdateProfileDto,
+) {
+     return this.profileService.updateMyProfile(
+    userId,
+    updateProfileDto,
+  );
+}
+
 
 
 
