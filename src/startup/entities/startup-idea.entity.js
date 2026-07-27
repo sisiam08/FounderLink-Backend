@@ -46,6 +46,7 @@ __decorate([
 ], StartupIdea.prototype, "id", void 0);
 __decorate([
     (0, typeorm_1.ManyToOne)(() => user_entity_1.User, (user) => user.startupIdeas, { onDelete: 'CASCADE' }),
+    (0, typeorm_1.JoinColumn)({ name: 'owner_id' }),
     __metadata("design:type", user_entity_1.User)
 ], StartupIdea.prototype, "owner", void 0);
 __decorate([

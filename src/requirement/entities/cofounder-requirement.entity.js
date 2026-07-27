@@ -38,6 +38,7 @@ __decorate([
     (0, typeorm_1.ManyToOne)(() => startup_idea_entity_1.StartupIdea, (idea) => idea.requirements, {
         onDelete: 'CASCADE',
     }),
+    (0, typeorm_1.JoinColumn)({ name: 'startup_idea_id' }),
     __metadata("design:type", startup_idea_entity_1.StartupIdea)
 ], CofounderRequirement.prototype, "startupIdea", void 0);
 __decorate([

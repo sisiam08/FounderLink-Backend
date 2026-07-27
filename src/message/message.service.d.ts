@@ -19,5 +19,21 @@ export declare class MessageService {
     markAsRead(applicationId: string, userId: string): Promise<void>;
     getUnreadCount(userId: string): Promise<number>;
     getUnreadEachApplication(userId: string): Promise<Record<string, number>>;
-    getConversations(userId: string): Promise<any>;
+    getConversations(userId: string): Promise<{
+        applicationId: any;
+        startupTitle: any;
+        otherUser: {
+            id: any;
+            fullName: any;
+            photo: any;
+        };
+        lastMessage: {
+            id: any;
+            content: any;
+            senderId: any;
+            isRead: any;
+            createdAt: any;
+        } | null;
+        unreadCount: number;
+    }[]>;
 }

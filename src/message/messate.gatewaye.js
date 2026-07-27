@@ -11,7 +11,6 @@ var __metadata = (this && this.__metadata) || function (k, v) {
 var __param = (this && this.__param) || function (paramIndex, decorator) {
     return function (target, key) { decorator(target, key, paramIndex); }
 };
-var _a, _b, _c, _d;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.MessageGateway = void 0;
 const common_1 = require("@nestjs/common");
@@ -123,7 +122,7 @@ let MessageGateway = class MessageGateway {
 exports.MessageGateway = MessageGateway;
 __decorate([
     (0, websockets_1.WebSocketServer)(),
-    __metadata("design:type", typeof (_d = typeof socket_io_1.Server !== "undefined" && socket_io_1.Server) === "function" ? _d : Object)
+    __metadata("design:type", socket_io_1.Server)
 ], MessageGateway.prototype, "server", void 0);
 __decorate([
     (0, websockets_1.SubscribeMessage)('join-room'),
@@ -160,6 +159,9 @@ exports.MessageGateway = MessageGateway = __decorate([
         namespace: '/chat'
     }),
     __param(2, (0, typeorm_1.InjectRepository)(user_entity_1.User)),
-    __metadata("design:paramtypes", [typeof (_a = typeof jwt_1.JwtService !== "undefined" && jwt_1.JwtService) === "function" ? _a : Object, typeof (_b = typeof config_1.ConfigService !== "undefined" && config_1.ConfigService) === "function" ? _b : Object, typeof (_c = typeof typeorm_2.Repository !== "undefined" && typeorm_2.Repository) === "function" ? _c : Object, message_service_1.MessageService])
+    __metadata("design:paramtypes", [jwt_1.JwtService,
+        config_1.ConfigService,
+        typeorm_2.Repository,
+        message_service_1.MessageService])
 ], MessageGateway);
 //# sourceMappingURL=messate.gatewaye.js.map
