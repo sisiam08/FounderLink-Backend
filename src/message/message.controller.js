@@ -15,7 +15,7 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.MessageController = void 0;
 const common_1 = require("@nestjs/common");
 const message_service_1 = require("./message.service");
-const current_user_decorator_1 = require("../../../../src/common/decorators/current-user.decorator");
+const current_user_decorator_1 = require("../common/decorators/current-user.decorator");
 let MessageController = class MessageController {
     messageService;
     constructor(messageService) {

@@ -7,11 +7,11 @@ export declare class MessageController {
     }>;
     getUnreadByApplication(userId: string): Promise<Record<string, number>>;
     getConversations(userId: string): Promise<{
-        applicationId: any;
-        startupTitle: any;
+        applicationId: string;
+        startupTitle: string;
         otherUser: {
-            id: any;
-            fullName: any;
+            id: string;
+            fullName: string;
             photo: any;
         };
         lastMessage: {

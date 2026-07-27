@@ -10,12 +10,12 @@ import { SendMessageDto } from './dto/send-message.dto';
 import {
   Application,
   ApplicationStatus,
-} from 'src/application/entities/application.entity';
-import { User } from 'src/user/entities/user.entity';
-import { EventEmitter2 } from '@nestjs/event-emitter';
-import { NotificationGateway } from 'src/notification/notification.gateway';
-import { NotificationService } from 'src/notification/notification.service';
-import { NotificationType } from 'src/notification/entities/notification.entity';
+} from '../application/entities/application.entity';
+import { User } from '../user/entities/user.entity';
+import { EventEmitter } from 'events';
+import { NotificationGateway } from '../notification/notification.gateway';
+import { NotificationService } from '../notification/notification.service';
+import { NotificationType } from '../notification/entities/notification.entity';
 
 @Injectable()
 export class MessageService {
@@ -24,10 +24,11 @@ export class MessageService {
     private readonly messageRepo: Repository<Message>,
     @InjectRepository(Application)
     private readonly applicationRepo: Repository<Application>,
-    private readonly eventEmitter: EventEmitter2,
     private readonly notificationService: NotificationService,
     private readonly notificationGateway: NotificationGateway
   ) { }
+
+  private readonly eventEmitter = new EventEmitter();
 
   async assertRoomAccess(
     applicationId: string,

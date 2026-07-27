@@ -2,7 +2,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { OnGatewayConnection } from "@nestjs/websockets";
 import { Server } from "socket.io";
-import { User } from "../../../../src/user/entities/user.entity";
+import { User } from "../user/entities/user.entity";
 import { Repository } from "typeorm";
 import type { AuthenticatedSocket } from "./interfaces/socket.interface";
 import { MessageService } from "./message.service";

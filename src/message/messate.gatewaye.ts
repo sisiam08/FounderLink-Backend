@@ -4,7 +4,7 @@ import { JwtService } from "@nestjs/jwt";
 import { InjectRepository } from "@nestjs/typeorm";
 import { ConnectedSocket, MessageBody, OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer, WsException } from "@nestjs/websockets";
 import { Server } from "socket.io";
-import { User, UserStatus } from "src/user/entities/user.entity";
+import { User, UserStatus } from "../user/entities/user.entity";
 import { Repository } from "typeorm";
 import type { AuthenticatedSocket } from "./interfaces/socket.interface";
 import { MessageService } from "./message.service";
