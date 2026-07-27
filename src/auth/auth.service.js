@@ -14,12 +14,11 @@ var __param = (this && this.__param) || function (paramIndex, decorator) {
 var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
-var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.AuthService = void 0;
 const common_1 = require("@nestjs/common");
 const typeorm_1 = require("@nestjs/typeorm");
-const user_entity_1 = require("../../../../src/user/entities/user.entity");
+const user_entity_1 = require("../user/entities/user.entity");
 const typeorm_2 = require("typeorm");
 const bcrypt_1 = __importDefault(require("bcrypt"));
 const config_1 = require("@nestjs/config");
@@ -27,7 +26,7 @@ const jwt_1 = require("@nestjs/jwt");
 const session_service_1 = require("./session.service");
 const otp_service_1 = require("./otp.service");
 const otp_entity_1 = require("./entities/otp.entity");
-const mail_service_1 = require("../../../../src/mail/mail.service");
+const mail_service_1 = require("../mail/mail.service");
 let AuthService = class AuthService {
     userRepo;
     configService;
@@ -307,6 +306,7 @@ exports.AuthService = AuthService = __decorate([
         config_1.ConfigService,
         jwt_1.JwtService,
         session_service_1.SessionService,
-        otp_service_1.OTPService, typeof (_a = typeof mail_service_1.MailService !== "undefined" && mail_service_1.MailService) === "function" ? _a : Object])
+        otp_service_1.OTPService,
+        mail_service_1.MailService])
 ], AuthService);
 //# sourceMappingURL=auth.service.js.map

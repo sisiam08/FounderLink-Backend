@@ -1,4 +1,4 @@
-import { User } from "../../../../src/user/entities/user.entity";
+import { User } from '../user/entities/user.entity';
 import { Repository } from 'typeorm';
 import { ConfigService } from '@nestjs/config';
 import { SignupDto } from './dto/signup.dto';
@@ -8,7 +8,7 @@ import { SessionMetaData } from './interfaces/session.interface';
 import { JwtService } from '@nestjs/jwt';
 import { SessionService } from './session.service';
 import { OTPService } from './otp.service';
-import { MailService } from "../../../../src/mail/mail.service";
+import { MailService } from '../mail/mail.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
