@@ -1,4 +1,4 @@
-import { Body, Controller, Post } from '@nestjs/common';
+import { Body, Controller, Post,Get } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { ProfileService } from './profile.service';
@@ -11,12 +11,23 @@ export class ProfileController {
 
 @Post()
   createProfile(
-    @CurrentUser('userId') userId: string,
+     @CurrentUser('userId') userId: string,
     @Body() createProfileDto: CreateProfileDto,
   ) {
     return this.profileService.createProfile(
       userId,
-      createProfileDto,
+    createProfileDto,
     );
   }
+
+
+@Get('me')
+getMyProfile(
+  @CurrentUser('userId') userId: string,
+) {
+  return this.profileService.getMyProfile(userId);
+}
+
+
+
 }

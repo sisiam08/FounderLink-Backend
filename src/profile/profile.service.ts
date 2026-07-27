@@ -1,4 +1,4 @@
-import { ConflictException, Injectable } from '@nestjs/common';
+import { ConflictException, Injectable,NotFoundException } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
@@ -50,5 +50,31 @@ export class ProfileService {
 
     return await this.profileRepo.save(profile);
   }
+
+
+
+
+async getMyProfile(userId: string): Promise<Profile> {
+  const profile =await this.profileRepo.findOne({
+    where: {
+    user: {
+     id: userId,
+      },
+    },
+  });
+
+  if (profile == null) {
+    throw new NotFoundException(
+      'Profile not found for this user',
+    );
+  }
+
+  return profile;
+}
+
+
+
+
+
 }
 
