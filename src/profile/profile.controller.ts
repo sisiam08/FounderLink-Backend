@@ -1,4 +1,4 @@
-import { Body, Controller, Post,Get,Patch } from '@nestjs/common';
+import { Body, Controller, Post,Get,Patch ,Param, ParseUUIDPipe} from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateProfileDto } from './dto/create-profile.dto';
 import { ProfileService } from './profile.service';
@@ -41,6 +41,13 @@ updateMyProfile(
 }
 
 
+@Get(':userId')
+getProfileByUserId(
+   @Param('userId', new ParseUUIDPipe({ version: '4' }))
+  userId: string,
+) {
+  return this.profileService.getProfileByUserId(userId);
+}
 
 
 }

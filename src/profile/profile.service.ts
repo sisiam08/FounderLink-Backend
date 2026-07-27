@@ -86,5 +86,26 @@ async updateMyProfile(
 }
 
 
+async getProfileByUserId(userId: string): Promise<Profile> {
+  const profile = await this.profileRepo.findOne({
+    where: {
+      user: {
+      id: userId,
+    },
+    },
+   });
+
+  if (profile ==null){
+    throw new NotFoundException(
+          `Profile for user with id ${userId} not found`,
+  );
+  }
+
+  return profile;
+}
+
+
+
+
 }
 
