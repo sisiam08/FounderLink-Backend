@@ -8,12 +8,11 @@ var __decorate = (this && this.__decorate) || function (decorators, target, key,
 var __metadata = (this && this.__metadata) || function (k, v) {
     if (typeof Reflect === "object" && typeof Reflect.metadata === "function") return Reflect.metadata(k, v);
 };
-var _a;
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = exports.UserStatus = exports.SystemRole = void 0;
-const user_session_entity_1 = require("../../../../../src/auth/entities/user-session.entity");
-const profile_entity_1 = require("../../../../../src/profile/entities/profile.entity");
-const startup_idea_entity_1 = require("../../../../../src/startup/entities/startup-idea.entity");
+const user_session_entity_1 = require("../../auth/entities/user-session.entity");
+const profile_entity_1 = require("../../profile/entities/profile.entity");
+const startup_idea_entity_1 = require("../../startup/entities/startup-idea.entity");
 const typeorm_1 = require("typeorm");
 var SystemRole;
 (function (SystemRole) {
@@ -101,7 +100,7 @@ __decorate([
 ], User.prototype, "sessions", void 0);
 __decorate([
     (0, typeorm_1.OneToOne)(() => profile_entity_1.Profile, (profile) => profile.user),
-    __metadata("design:type", typeof (_a = typeof profile_entity_1.Profile !== "undefined" && profile_entity_1.Profile) === "function" ? _a : Object)
+    __metadata("design:type", profile_entity_1.Profile)
 ], User.prototype, "profile", void 0);
 __decorate([
     (0, typeorm_1.OneToMany)(() => startup_idea_entity_1.StartupIdea, (startupIdea) => (startupIdea.owner)),

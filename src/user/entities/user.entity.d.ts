@@ -1,6 +1,6 @@
-import { UserSession } from "../../../../../src/auth/entities/user-session.entity";
-import { Profile } from "../../../../../src/profile/entities/profile.entity";
-import { StartupIdea } from "../../../../../src/startup/entities/startup-idea.entity";
+import { UserSession } from '../../auth/entities/user-session.entity';
+import { Profile } from '../../profile/entities/profile.entity';
+import { StartupIdea } from '../../startup/entities/startup-idea.entity';
 export declare enum SystemRole {
     USER = "user",
     ADMIN = "admin",

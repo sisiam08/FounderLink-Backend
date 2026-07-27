@@ -12,7 +12,7 @@ export declare class MessageController {
         otherUser: {
             id: string;
             fullName: string;
-            photo: any;
+            photo: string | null;
         };
         lastMessage: {
             id: any;

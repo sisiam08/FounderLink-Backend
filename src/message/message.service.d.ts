@@ -24,7 +24,7 @@ export declare class MessageService {
         otherUser: {
             id: string;
             fullName: string;
-            photo: any;
+            photo: string | null;
         };
         lastMessage: {
             id: any;
