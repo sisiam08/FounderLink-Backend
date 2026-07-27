@@ -2,8 +2,8 @@ import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@
 import { Reflector } from "@nestjs/core";
 import { Observable } from "rxjs";
 import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
-import { AuthenticatedRequest } from "src/auth/interfaces/auth.interface";
-import { UserStatus } from "src/user/entities/user.entity";
+import { AuthenticatedRequest } from "../../auth/interfaces/auth.interface";
+import { UserStatus } from "../../user/entities/user.entity";
 
 @Injectable()
 export class ActiveUserGuard implements CanActivate{

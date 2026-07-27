@@ -13,7 +13,7 @@ exports.ActiveUserGuard = void 0;
 const common_1 = require("@nestjs/common");
 const core_1 = require("@nestjs/core");
 const public_decorator_1 = require("../decorators/public.decorator");
-const user_entity_1 = require("../../../../../src/user/entities/user.entity");
+const user_entity_1 = require("../../user/entities/user.entity");
 let ActiveUserGuard = class ActiveUserGuard {
     reflector;
     constructor(reflector) {
