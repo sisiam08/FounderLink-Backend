@@ -10,7 +10,7 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
-import { User } from 'src/user/entities/user.entity';
+import { User } from '../user/entities/user.entity';
 import type {
   AuthenticatedUser,
   AuthResult,
@@ -19,8 +19,8 @@ import { LoginDto } from './dto/login.dto';
 import type { CookieOptions, Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
-import { Public } from 'src/common/decorators/public.decorator';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { Public } from '../common/decorators/public.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';

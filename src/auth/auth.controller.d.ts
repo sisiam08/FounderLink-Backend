@@ -1,6 +1,6 @@
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
-import { User } from "../../../../src/user/entities/user.entity";
+import { User } from '../user/entities/user.entity';
 import type { AuthenticatedUser, AuthResult } from './interfaces/auth.interface';
 import { LoginDto } from './dto/login.dto';
 import type { Request, Response } from 'express';
