@@ -30,6 +30,7 @@ export class StartupIdea {
   id: string;
 
   @ManyToOne(() => User, (user) => user.startupIdeas, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'owner_id' })
   owner: User;
 
   @Column({ length: 160 })
