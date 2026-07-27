@@ -1,4 +1,6 @@
-import { ConflictException, Injectable,NotFoundException } from '@nestjs/common';
+import { ConflictException, Injectable,NotFoundException,
+  BadRequestException
+ } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
@@ -64,7 +66,7 @@ async getMyProfile(userId: string): Promise<Profile> {
     },
   });
 
-  if (profile == null) {
+  if (profile ==null) {
     throw new NotFoundException(
       'Profile not found for this user',
     );
@@ -78,7 +80,7 @@ async updateMyProfile(
   userId: string,
     updateProfileDto: UpdateProfileDto,
 ): Promise<Profile>{
-   const profile = await this.getMyProfile(userId);
+   const profile =await this.getMyProfile(userId);
 
       Object.assign(profile, updateProfileDto);
 
@@ -87,7 +89,7 @@ async updateMyProfile(
 
 
 async getProfileByUserId(userId: string): Promise<Profile> {
-  const profile = await this.profileRepo.findOne({
+  const profile= await this.profileRepo.findOne({
     where: {
       user: {
       id: userId,
@@ -104,6 +106,23 @@ async getProfileByUserId(userId: string): Promise<Profile> {
   return profile;
 }
 
+
+async uploadProfilePhoto(
+  userId: string,
+    file: Express.Multer.File,
+): Promise<Profile> {
+  if (!file) {
+      throw new BadRequestException(
+      'Profile photo file is required',
+    );
+  }
+
+  const profile =await this.getMyProfile(userId);
+
+    profile.photoUrl =file.path.replace(/\\/g, '/');
+
+      return await this.profileRepo.save(profile);
+}
 
 
 
