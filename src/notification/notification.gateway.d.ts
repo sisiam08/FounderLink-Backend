@@ -2,7 +2,7 @@ import { ConfigService } from "@nestjs/config";
 import { JwtService } from "@nestjs/jwt";
 import { OnGatewayConnection } from "@nestjs/websockets";
 import { Server, Socket } from "socket.io";
-import { User } from "../../../../src/user/entities/user.entity";
+import { User } from "../user/entities/user.entity";
 import { Repository } from "typeorm";
 import { Notification } from "./entities/notification.entity";
 export declare class NotificationGateway implements OnGatewayConnection {

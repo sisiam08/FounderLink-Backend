@@ -12,9 +12,9 @@ const notification_service_1 = require("./notification.service");
 const notification_controller_1 = require("./notification.controller");
 const typeorm_1 = require("@nestjs/typeorm");
 const notification_entity_1 = require("./entities/notification.entity");
-const user_entity_1 = require("../../../../src/user/entities/user.entity");
+const user_entity_1 = require("../user/entities/user.entity");
 const notification_gateway_1 = require("./notification.gateway");
-const auth_module_1 = require("../../../../src/auth/auth.module");
+const auth_module_1 = require("../auth/auth.module");
 let NotificationModule = class NotificationModule {
 };
 exports.NotificationModule = NotificationModule;
