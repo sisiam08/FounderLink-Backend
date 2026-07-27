@@ -56,11 +56,8 @@ export class MailService {
                 text
             })
         } catch (error) {
-            console.log(error);
-            
             if (error instanceof HttpException) throw error;
             throw new InternalServerErrorException('Failed to send OTP email')
-
         }
 
     }

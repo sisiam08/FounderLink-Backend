@@ -7,7 +7,9 @@ import { AppService } from './app.service';
 import { ProfileModule } from './profile/profile.module';
 import { AuthModule } from './auth/auth.module';
 import { MailModule } from './mail/mail.module';
-
+import { MessageModule } from './message/message.module';
+import { EventEmitterModule } from '@nestjs/event-emitter';
+import { NotificationModule } from './notification/notification.module';
 
 @Module({
   imports: [
@@ -39,12 +41,13 @@ import { MailModule } from './mail/mail.module';
         connectTimeoutMS: 15000,
       }),
     }),
-
     ProfileModule,
+    EventEmitterModule.forRoot(),
     AuthModule,
-    MailModule
+    MailModule,
+    MessageModule,
+    NotificationModule
   ],
-
   controllers: [AppController],
 
   providers: [AppService],

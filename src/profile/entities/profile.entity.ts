@@ -1,16 +1,17 @@
 import {
-  Column,
-  CreateDateColumn,
   Entity,
-  JoinColumn,
-  OneToOne,
   PrimaryGeneratedColumn,
+  Column,
+  OneToOne,
+  JoinColumn,
+  CreateDateColumn,
   UpdateDateColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 
 export enum ProfileRole {
   TECHNICAL = 'technical',
+  PRODUCT = 'product',
   DESIGN = 'design',
   MARKETING = 'marketing',
   BUSINESS = 'business',
@@ -21,29 +22,17 @@ export class Profile {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @OneToOne(() => User, (user) => user.profile, {
-    onDelete: 'CASCADE',
-  })
+  @OneToOne(() => User, (user) => user.profile, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({
-    type: 'text',
-    nullable: true,
-  })
+  @Column({ type: 'text', nullable: true })
   bio: string | null;
 
-  @Column({
-    type: 'enum',
-    enum: ProfileRole,
-  })
+  @Column({ type: 'enum', enum: ProfileRole })
   role: ProfileRole;
 
-  @Column({
-    type: 'text',
-    array: true,
-    default: [],
-  })
+  @Column({ type: 'text', array: true, default: [] })
   skills: string[];
 
   @Column({
@@ -54,45 +43,22 @@ export class Profile {
   })
   interestedIndustries: string[];
 
-  @Column({
-    name: 'available_weekly_commitment',
-    type: 'int',
-    default: 10,
-  })
+  @Column({ name: 'available_weekly_commitment', default: 10 })
   availableWeeklyCommitment: number;
 
-  @Column({
-    name: 'portfolio_url',
-    type: 'varchar',
-    nullable: true,
-  })
+  @Column({ name: 'portfolio_url', type: 'varchar', nullable: true })
   portfolioUrl: string | null;
 
-  @Column({
-    name: 'github_url',
-    type: 'varchar',
-    nullable: true,
-  })
+  @Column({ name: 'github_url', type: 'varchar', nullable: true })
   githubUrl: string | null;
 
-  @Column({
-    name: 'linkedin_url',
-    type: 'varchar',
-    nullable: true,
-  })
+  @Column({ name: 'linkedin_url', type: 'varchar', nullable: true })
   linkedinUrl: string | null;
 
-  @Column({
-    type: 'varchar',
-    nullable: true,
-  })
+  @Column({ type: 'varchar', nullable: true })
   location: string | null;
 
-  @Column({
-    name: 'photo_url',
-    type: 'varchar',
-    nullable: true,
-  })
+  @Column({ name: 'photo_url', type: 'varchar', nullable: true })
   photoUrl: string | null;
 
   @CreateDateColumn({ name: 'created_at' })
