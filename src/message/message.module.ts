@@ -14,11 +14,18 @@ import { MessageController } from './message.controller';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([Message, Application, StartupIdea, CofounderRequirement, User, Profile]),
+    TypeOrmModule.forFeature([
+      Message,
+      Application,
+      StartupIdea,
+      CofounderRequirement,
+      User,
+      Profile,
+    ]),
     AuthModule,
-    NotificationModule
+    NotificationModule,
   ],
   controllers: [MessageController],
   providers: [MessageService, MessageGateway],
 })
-export class MessageModule { }
+export class MessageModule {}

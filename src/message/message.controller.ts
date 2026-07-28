@@ -4,7 +4,7 @@ import { CurrentUser } from '../common/decorators/current-user.decorator';
 
 @Controller('message')
 export class MessageController {
-  constructor(private readonly messageService: MessageService) { }
+  constructor(private readonly messageService: MessageService) {}
 
   @Get('unread-count')
   async getUnreadCount(@CurrentUser('userId') userId: string) {
@@ -12,7 +12,7 @@ export class MessageController {
     return { count };
   }
 
-   @Get('unread-each-application')
+  @Get('unread-each-application')
   async getUnreadByApplication(@CurrentUser('userId') userId: string) {
     return this.messageService.getUnreadEachApplication(userId);
   }
@@ -29,5 +29,4 @@ export class MessageController {
   ) {
     return this.messageService.getMessages(applicationId, userId);
   }
-
 }

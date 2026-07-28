@@ -1,139 +1,166 @@
-import { UnauthorizedException } from "@nestjs/common";
-import { ConfigService } from "@nestjs/config";
-import { JwtService } from "@nestjs/jwt";
-import { InjectRepository } from "@nestjs/typeorm";
-import { ConnectedSocket, MessageBody, OnGatewayConnection, SubscribeMessage, WebSocketGateway, WebSocketServer, WsException } from "@nestjs/websockets";
-import { Server } from "socket.io";
-import { User, UserStatus } from "../user/entities/user.entity";
-import { Repository } from "typeorm";
-import type { AuthenticatedSocket } from "./interfaces/socket.interface";
-import { MessageService } from "./message.service";
-import { OnEvent } from "@nestjs/event-emitter";
-import { SendMessageDto } from "./dto/send-message.dto";
+import { UnauthorizedException } from '@nestjs/common';
+import { ConfigService } from '@nestjs/config';
+import { JwtService } from '@nestjs/jwt';
+import { InjectRepository } from '@nestjs/typeorm';
+import {
+  ConnectedSocket,
+  MessageBody,
+  OnGatewayConnection,
+  SubscribeMessage,
+  WebSocketGateway,
+  WebSocketServer,
+  WsException,
+} from '@nestjs/websockets';
+import { Server } from 'socket.io';
+import { User, UserStatus } from 'src/user/entities/user.entity';
+import { Repository } from 'typeorm';
+import type { AuthenticatedSocket } from './interfaces/socket.interface';
+import { MessageService } from './message.service';
+import { OnEvent } from '@nestjs/event-emitter';
+import { SendMessageDto } from './dto/send-message.dto';
 
 @WebSocketGateway({
-    namespace: '/chat'
+  namespace: '/chat',
 })
 export class MessageGateway implements OnGatewayConnection {
-    @WebSocketServer()
-    server: Server;
+  @WebSocketServer()
+  server: Server;
 
-    constructor(private readonly jwtService: JwtService,
-        private readonly configService: ConfigService,
-        @InjectRepository(User)
-        private readonly userRepo: Repository<User>,
-        private readonly messageService: MessageService
-    ) { }
+  constructor(
+    private readonly jwtService: JwtService,
+    private readonly configService: ConfigService,
+    @InjectRepository(User)
+    private readonly userRepo: Repository<User>,
+    private readonly messageService: MessageService,
+  ) {}
 
-    private createRoom(applicationId: string) {
-        return `application: ${applicationId}`;
+  private createRoom(applicationId: string) {
+    return `application: ${applicationId}`;
+  }
+
+  async handleConnection(client: AuthenticatedSocket) {
+    try {
+      const auth = client.handshake.auth as Record<string, unknown>;
+      const accessToken =
+        typeof auth.accessToken === 'string' ? auth.accessToken : null;
+
+      if (!accessToken) {
+        throw new UnauthorizedException('Authorization token missing');
+      }
+
+      const payload = await this.jwtService.verify(accessToken, {
+        secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
+      });
+
+      const user = await this.userRepo.findOne({
+        where: {
+          id: payload.userId,
+        },
+        select: {
+          id: true,
+          status: true,
+        },
+      });
+      if (!user || user.status !== UserStatus.ACTIVE) {
+        throw new UnauthorizedException(
+          'User not found or account is not active',
+        );
+      }
+
+      client.data.userId = payload.userId;
+      client.data.sessionId = payload.sessionId;
+      client.data.joinedApplications = new Set<string>();
+    } catch (error) {
+      void client.disconnect();
+      throw error;
+    }
+  }
+
+  @SubscribeMessage('join-room')
+  async handleJoinRoom(
+    @MessageBody() applicationId: string,
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ) {
+    if (!client.data.joinedApplications.has(applicationId)) {
+      void (await this.messageService.assertRoomAccess(
+        applicationId,
+        client.data.userId,
+      ));
+      client.data.joinedApplications.add(applicationId);
+    }
+    const room = this.createRoom(applicationId);
+    void client.join(room);
+    await this.messageService.markAsRead(applicationId, client.data.userId);
+  }
+
+  @SubscribeMessage('leave-room')
+  handleLeaveRoom(
+    @MessageBody() applicationId: string,
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ) {
+    const room = this.createRoom(applicationId);
+    void client.leave(room);
+  }
+
+  @SubscribeMessage('send-message')
+  async handleSendMessage(
+    @MessageBody() payload: SendMessageDto,
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ): Promise<{
+    success: boolean;
+    message?: Record<string, unknown>;
+    error?: string;
+  }> {
+    const userId = client.data.userId;
+
+    if (!userId) {
+      throw new WsException('User not authenticated');
     }
 
-    async handleConnection(client: AuthenticatedSocket) {
-        try {
-            const auth = client.handshake.auth as Record<string, unknown>;
-            const accessToken = (typeof auth.accessToken === 'string') ? auth.accessToken : null;
+    const { applicationId, content } = payload;
 
-            if (!accessToken) {
-                throw new UnauthorizedException("Authorization token missing")
-            }
-
-            const payload = await this.jwtService.verify(accessToken, {
-                secret: this.configService.getOrThrow<string>('JWT_ACCESS_SECRET')
-            })
-
-            const user = await this.userRepo.findOne({
-                where: {
-                    id: payload.userId
-                },
-                select: {
-                    id: true,
-                    status: true
-                }
-            })
-            if (!user || user.status !== UserStatus.ACTIVE) {
-                throw new UnauthorizedException("User not found or account is not active")
-            }
-
-            client.data.userId = payload.userId;
-            client.data.sessionId = payload.sessionId;
-            client.data.joinedApplications = new Set<string>;
-
-        } catch (error) {
-            void client.disconnect();
-            throw error;
-        }
+    if (!applicationId || !content?.trim()) {
+      return {
+        success: false,
+        error: 'applicationId and content are required',
+      };
+    }
+    if (!client.data.joinedApplications.has(applicationId)) {
+      throw new WsException('You are not in the room');
     }
 
-    @SubscribeMessage('join-room')
-    async handleJoinRoom(@MessageBody() applicationId: string, @ConnectedSocket() client: AuthenticatedSocket) {
-        if (!client.data.joinedApplications.has(applicationId)) {
-            void await this.messageService.assertRoomAccess(applicationId, client.data.userId);
-            client.data.joinedApplications.add(applicationId);
-        }
-        const room = this.createRoom(applicationId);
-        void client.join(room);
-        await this.messageService.markAsRead(applicationId, client.data.userId);
-    }
+    try {
+      const message = await this.messageService.sendMessage(userId, payload);
 
-    @SubscribeMessage('leave-room')
-    handleLeaveRoom(@MessageBody() applicationId: string, @ConnectedSocket() client: AuthenticatedSocket) {
-        const room = this.createRoom(applicationId);
-        void client.leave(room);
-    }
-
-    @SubscribeMessage('send-message')
-    async handleSendMessage(
-        @MessageBody() payload: SendMessageDto,
-        @ConnectedSocket() client: AuthenticatedSocket,
-    ): Promise<{ success: boolean; message?: Record<string, unknown>; error?: string }> {
-        const userId = client.data.userId;
-
-        if (!userId) {
-            throw new WsException("User not authenticated")
-        }
-
-        const { applicationId, content } = payload;
-
-        if (!applicationId || !content?.trim()) {
-            return { success: false, error: 'applicationId and content are required' };
-        }
-        if (!client.data.joinedApplications.has(applicationId)) {
-            throw new WsException("You are not in the room");
-        }
-
-        try {
-            const message = await this.messageService.sendMessage(
-                userId,
-                payload
-            );
-
-            return {
-                success: true,
-                message: {
-                    id: message.id,
-                    content: message.content,
-                    senderId: userId,
-                    createdAt: message.createdAt,
-                },
-            };
-        } catch (error) {
-            if (error instanceof WsException) {
+      return {
+        success: true,
+        message: {
+          id: message.id,
+          content: message.content,
+          senderId: userId,
+          createdAt: message.createdAt,
+        },
+      };
+    } catch (error) {
+      if (error instanceof WsException) {
         throw error;
-    }
+      }
 
-    throw new WsException("Failed to send message");
-        }
+      throw new WsException('Failed to send message');
     }
+  }
 
-    @OnEvent('new.message')
-    emitNewMessage(applicationId: string, messages: {
-        id: string,
-        content: string,
-        senderId: string,
-        createdAt: Date
-    }) {
-        const room = this.createRoom(applicationId);
-        this.server.to(room).emit('new-message', messages);
-    }
+  @OnEvent('new.message')
+  emitNewMessage(
+    applicationId: string,
+    messages: {
+      id: string;
+      content: string;
+      senderId: string;
+      createdAt: Date;
+    },
+  ) {
+    const room = this.createRoom(applicationId);
+    this.server.to(room).emit('new-message', messages);
+  }
 }

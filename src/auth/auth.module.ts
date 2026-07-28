@@ -27,11 +27,13 @@ import { RolesGuard } from '../common/guards/roles.guard';
         global: true,
         secret: configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
         signOptions: {
-          expiresIn: configService.getOrThrow<string>('JWT_ACCESS_EXPIRES_IN') as StringValue,
-        }
-      })
+          expiresIn: configService.getOrThrow<string>(
+            'JWT_ACCESS_EXPIRES_IN',
+          ) as StringValue,
+        },
+      }),
     }),
-    MailModule
+    MailModule,
   ],
   controllers: [AuthController],
   providers: [
@@ -50,8 +52,8 @@ import { RolesGuard } from '../common/guards/roles.guard';
     {
       provide: APP_GUARD,
       useClass: RolesGuard,
-    }
+    },
   ],
-  exports: [JwtModule]
+  exports: [JwtModule, SessionService]
 })
 export class AuthModule {}

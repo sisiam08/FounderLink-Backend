@@ -1,12 +1,13 @@
+import { Type } from 'class-transformer';
 import {
-  IsEnum,
-  IsArray,
   ArrayMaxSize,
+  IsArray,
+  IsEnum,
   IsInt,
-  Min,
-  Max,
   IsNumber,
   IsString,
+  Max,
+  Min,
 } from 'class-validator';
 import { ProfileRole } from '../../profile/entities/profile.entity';
 
@@ -19,11 +20,14 @@ export class CreateRequirementDto {
   @IsString({ each: true })
   requiredSkills: string[];
 
+  @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(80)
   requiredWeeklyCommitment: number;
 
-  @IsNumber()
+  @Type(() => Number)
+  @IsNumber({ maxDecimalPlaces: 2 })
   @Min(0)
   @Max(100)
   equityOffered: number;

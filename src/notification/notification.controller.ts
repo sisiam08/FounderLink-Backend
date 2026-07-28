@@ -5,10 +5,12 @@ import { Notification } from './entities/notification.entity';
 
 @Controller('notification')
 export class NotificationController {
-  constructor(private readonly notificationService: NotificationService) { }
+  constructor(private readonly notificationService: NotificationService) {}
 
   @Get()
-  async getAllNotificationsByUser(@CurrentUser('userId') userId: string): Promise<Notification[]> {
+  async getAllNotificationsByUser(
+    @CurrentUser('userId') userId: string,
+  ): Promise<Notification[]> {
     return await this.notificationService.getAllNotificationsByUser(userId);
   }
 
