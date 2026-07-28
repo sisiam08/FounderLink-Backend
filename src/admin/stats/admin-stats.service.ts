@@ -97,7 +97,7 @@ export class AdminStatsService {
 
     return qb.getRawMany();
   }
-  
+
   async getApplicationStats() {
     const statusRows: RawCountRow[] = await this.applicationRepo
       .createQueryBuilder('app')
@@ -124,6 +124,7 @@ export class AdminStatsService {
         : 0,
     };
   }
+
 
   async getRequirementStats() {
     const openCount = await this.requirementRepo.count({
@@ -152,4 +153,5 @@ export class AdminStatsService {
       ),
     };
   }
+
 }
