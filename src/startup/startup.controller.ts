@@ -34,7 +34,13 @@ export class StartupController {
     return this.startupService.getMyStartups(userId);
   }
 
-
+ @Get(':id')
+  getStartupById(
+    @Param('id', new ParseUUIDPipe({ version: '4' }))
+    id: string,
+  ) {
+    return this.startupService.getStartupById(id);
+  }
 
 
 

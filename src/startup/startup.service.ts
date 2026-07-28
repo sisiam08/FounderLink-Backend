@@ -61,7 +61,25 @@ return await this.startupRepo.find({
 
 
 
+ async getStartupById(id: string): Promise<StartupIdea> {
+    const startup = await this.startupRepo.findOne({
+      where:{
+        id: id,
+      },
+      relations: {
+     owner: true,
+    requirements: true,
+      },
+    });
 
+    if (startup==null) {
+      throw new NotFoundException(
+    `Startup idea with id ${id} not found`,
+      );
+    }
+
+    return startup;
+  }
 
 
 
