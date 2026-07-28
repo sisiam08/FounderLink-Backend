@@ -34,12 +34,12 @@ export class ApplicationService {
     if (application.candidate.id !== userId) {
       throw new ForbiddenException(
         'You can only withdraw your own application',
-      );
+      )
     }
     if (application.status !== ApplicationStatus.PENDING) {
       throw new BadRequestException(
         'Only pending applications can be withdrawn',
-      );
+      )
     }
 
     application.status = ApplicationStatus.WITHDRAWN;
@@ -53,7 +53,7 @@ export class ApplicationService {
     if (ownerId !== userId) {
       throw new ForbiddenException(
         'Only the requirement owner can accept applications',
-      );
+      )
     }
     if (application.status !== ApplicationStatus.PENDING) {
       throw new BadRequestException(
@@ -90,7 +90,7 @@ export class ApplicationService {
       order: { createdAt: 'DESC' },
     });
   }
-  
+
   async getApplicationsForRequirement(
     requirementId: string,
     userId: string,
