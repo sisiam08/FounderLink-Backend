@@ -41,5 +41,33 @@ export class StartupService {
 
     return await this.startupRepo.save(startup);
   }
+
+
+async getMyStartups(userId: string): Promise<StartupIdea[]> {
+return await this.startupRepo.find({
+      where:{
+        owner: {
+        id: userId,
+        },
+      },
+       relations: {
+    requirements: true,
+      },
+      order: {
+    createdAt:'DESC',
+      },
+    });
+  }
+
+
+
+
+
+
+
+
+
+
+
 }
 

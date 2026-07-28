@@ -25,4 +25,19 @@ export class StartupController {
   ) {
     return this.startupService.createStartup(userId, createStartupDto);
   }
+
+
+@Get('mine')
+  getMyStartups(
+    @CurrentUser('userId') userId:string,
+  ) {
+    return this.startupService.getMyStartups(userId);
+  }
+
+
+
+
+
+
+
 }
