@@ -10,12 +10,12 @@ import { MailModule } from './mail/mail.module';
 import { MessageModule } from './message/message.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationModule } from './notification/notification.module';
+import { StartupModule } from './startup/startup.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-    
     }),
 
     TypeOrmModule.forRootAsync({
@@ -46,7 +46,8 @@ import { NotificationModule } from './notification/notification.module';
     AuthModule,
     MailModule,
     MessageModule,
-    NotificationModule
+    NotificationModule,
+    StartupModule,
   ],
   controllers: [AppController],
 

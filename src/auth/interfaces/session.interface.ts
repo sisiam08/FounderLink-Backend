@@ -1,4 +1,4 @@
 export interface SessionMetaData {
-    ipAddress?: string,
-    userAgent?: string
+  ipAddress?: string;
+  userAgent?: string;
 }

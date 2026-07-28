@@ -11,6 +11,6 @@ import { AuthModule } from 'src/auth/auth.module';
   imports: [TypeOrmModule.forFeature([Notification, User]), AuthModule],
   controllers: [NotificationController],
   providers: [NotificationService, NotificationGateway],
-  exports: [NotificationService, NotificationGateway]
+  exports: [NotificationService, NotificationGateway],
 })
 export class NotificationModule {}
