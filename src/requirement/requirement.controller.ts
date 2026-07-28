@@ -40,7 +40,7 @@ export class RequirementController {
   @Get('browse')
   async browse(
     @CurrentUser('userId') userId: string,
-    @Query('cursor') cursor?: string,
+    @Query('cursor') cursor?: { createdAt: string; id: string },
     @Query('role') role?: string,
     @Query('industry') industry?: string,
     @Query('stage') stage?: string,

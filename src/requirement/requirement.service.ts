@@ -14,11 +14,9 @@ import { Profile } from '../profile/entities/profile.entity';
 import { CompatibilityService } from './compatibility.service';
 import { CreateRequirementDto } from './dto/create-requirement.dto';
 import { UpdateRequirementDto } from './dto/update-requirement.dto';
+import { BrowseRequirementsResult, RequirementWithScore } from './Interface/requirement.interface';
 
-export interface RequirementWithScore {
-  requirement: CofounderRequirement;
-  compatibilityScore: number;
-}
+
 
 @Injectable()
 export class RequirementService {
@@ -31,6 +29,9 @@ export class RequirementService {
     private readonly profileRepo: Repository<Profile>,
     private readonly compatibilityService: CompatibilityService,
   ) {}
+
+
+  
 
   async createRequirement(
     ideaId: string,
@@ -97,43 +98,53 @@ export class RequirementService {
   }
 
   async browseRequirements(
-    userId: string,
-    cursor?: string,
-    role?: string,
-    industry?: string,
-    stage?: string,
-  ): Promise<RequirementWithScore[]> {
-    const profile = await this.profileRepo.findOne({
-      where: { user: { id: userId } },
-    });
+  userId: string,
+  cursor?: { createdAt: string; id: string },
+  role?: string,
+  industry?: string,
+  stage?: string,
+): Promise<BrowseRequirementsResult> {
+  const profile = await this.profileRepo.findOne({
+    where: { user: { id: userId } },
+  });
 
-    const qb = this.requirementRepo
-      .createQueryBuilder('req')
-      .leftJoinAndSelect('req.startupIdea', 'idea')
-      .leftJoinAndSelect('idea.owner', 'owner')
-      .where('req.status = :status', { status: RequirementStatus.OPEN })
-      .andWhere('idea.status = :ideaStatus', { ideaStatus: 'open' });
+  const qb = this.requirementRepo
+    .createQueryBuilder('req')
+    .leftJoinAndSelect('req.startupIdea', 'idea')
+    .leftJoinAndSelect('idea.owner', 'owner')
+    .where('req.status = :status', { status: RequirementStatus.OPEN })
+    .andWhere('idea.status = :ideaStatus', { ideaStatus: 'open' });
 
-    if (cursor) {
-      qb.andWhere('req.createdAt < :cursor', {
-        cursor: new Date(parseInt(cursor, 10)),
-      });
-    }
-    if (role) {
-      qb.andWhere('req.requiredRole = :role', { role });
-    }
-    if (industry) {
-      qb.andWhere(':industry = ANY(idea.industries)', { industry });
-    }
-    if (stage) {
-      qb.andWhere('idea.startupStage = :stage', { stage });
-    }
+  if (cursor) {
+    qb.andWhere(
+      '(req.createdAt < :createdAt OR (req.createdAt = :createdAt AND req.id < :id))',
+      { createdAt: cursor.createdAt, id: cursor.id },
+    );
+  }
 
-    qb.orderBy('req.createdAt', 'DESC').take(20);
+  if (role) {
+    qb.andWhere('req.requiredRole = :role', { role });
+  }
+  if (industry) {
+    qb.andWhere(':industry = ANY(idea.industries)', { industry });
+  }
+  if (stage) {
+    qb.andWhere('idea.startupStage = :stage', { stage });
+  }
 
-    const requirements = await qb.getMany();
+  qb
+    .orderBy('req.createdAt', 'DESC')
+    .addOrderBy('req.id', 'DESC')
+    .take(21);
 
-    return requirements.map((requirement) => ({
+  const rows = await qb.getMany();
+
+  const hasNextPage = rows.length > 20;
+  const items = hasNextPage ? rows.slice(0, 20) : rows;
+  const last = items.at(-1);
+
+  return {
+    data: items.map((requirement) => ({
       requirement,
       compatibilityScore: profile
         ? this.compatibilityService.compute(
@@ -142,8 +153,12 @@ export class RequirementService {
             requirement.startupIdea,
           )
         : 0,
-    }));
-  }
+    })),
+    nextCursor: hasNextPage && last
+      ? { createdAt: last.createdAt.toISOString(), id: last.id }
+      : null,
+  };
+}
 
   async getRequirementById(
     id: string,
