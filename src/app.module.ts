@@ -41,12 +41,12 @@ import { NotificationModule } from './notification/notification.module';
         connectTimeoutMS: 15000,
       }),
     }),
-    ProfileModule,
     EventEmitterModule.forRoot(),
     AuthModule,
     MailModule,
     MessageModule,
-    NotificationModule
+    NotificationModule,
+    ProfileModule
   ],
   controllers: [AppController],
 
