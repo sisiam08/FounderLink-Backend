@@ -10,6 +10,7 @@ import { MailModule } from './mail/mail.module';
 import { MessageModule } from './message/message.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationModule } from './notification/notification.module';
+import { RequirementModule } from './requirement/requirement.module';
 import { StartupModule } from './startup/startup.module';
 import { UserModule } from './user/user.module';
 
@@ -47,6 +48,7 @@ import { UserModule } from './user/user.module';
     MailModule,
     MessageModule,
     NotificationModule,
+    RequirementModule
     StartupModule,
     ProfileModule,
     UserModule

@@ -1,6 +1,6 @@
 import { Controller, Get, Param, Patch } from '@nestjs/common';
 import { NotificationService } from './notification.service';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { Notification } from './entities/notification.entity';
 
 @Controller('notification')

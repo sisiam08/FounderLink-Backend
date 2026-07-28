@@ -29,11 +29,8 @@ export class StartupIdea {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  @ManyToOne(() => User, (user) => user.startupIdeas, {
-    onDelete:'CASCADE',
-  })
-  @JoinColumn(
-    {name:'owner_id' })
+  @ManyToOne(() => User, (user) => user.startupIdeas, { onDelete: 'CASCADE' })
+  @JoinColumn({ name: 'owner_id' })
   owner: User;
 
   @Column({

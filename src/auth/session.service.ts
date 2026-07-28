@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { User } from 'src/user/entities/user.entity';
+import { User } from '../user/entities/user.entity';
 import { SessionMetaData } from './interfaces/session.interface';
 import { UserSession } from './entities/user-session.entity';
 import { compareToken, generateToken, hashToken } from './token.utils';

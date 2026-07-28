@@ -8,7 +8,14 @@ export const CurrentUser = createParamDecorator(
   (data: keyof AuthenticatedUser | undefined, context: ExecutionContext) => {
     const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
 
+export const CurrentUser = createParamDecorator(
+  (
+    data: keyof { userId: string; sessionId: string } | undefined,
+    ctx: ExecutionContext,
+  ) => {
+    const request = ctx.switchToHttp().getRequest<AuthenticatedRequest>();
     const user = request.user;
+  
     if (!user) return undefined;
 
     return data ? user[data] : user;
