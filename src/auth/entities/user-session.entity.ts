@@ -2,8 +2,9 @@ import {
   Entity,
   PrimaryGeneratedColumn,
   Column,
-  JoinColumn,
+  ManyToOne,
   CreateDateColumn,
+  JoinColumn,
 } from 'typeorm';
 import { User } from '../../user/entities/user.entity';
 
@@ -12,15 +13,15 @@ export class UserSession {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // @ManyToOne(() => User, (user) => user.sessions, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, (user) => user.sessions, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'user_id' })
   user: User;
 
-  @Column({ name: 'refresh_token_hash' })
-  refreshTokenHash: string;
+  @Column({ name: 'user_id', type: 'varchar' })
+  userId: string;
 
-  @Column({ name: 'device_info', type: 'varchar', nullable: true })
-  deviceInfo: string | null;
+  @Column({ name: 'refresh_token', type: 'text' })
+  refreshToken: string;
 
   @Column({ name: 'ip_address', type: 'varchar', nullable: true })
   ipAddress: string | null;

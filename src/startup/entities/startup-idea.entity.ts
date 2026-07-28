@@ -1,27 +1,28 @@
 import {
-  Entity,
-  PrimaryGeneratedColumn,
   Column,
-  ManyToOne,
-  JoinColumn,
-  OneToMany,
   CreateDateColumn,
+  Entity,
+  JoinColumn,
+  ManyToOne,
+  OneToMany,
+  PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
+import { CofounderRequirement } from '../../requirement/entities/cofounder-requirement.entity';
 import { User } from '../../user/entities/user.entity';
 import { CofounderRequirement } from '../../requirement/entities/cofounder-requirement.entity';
 
 export enum StartupStage {
-  IDEA = 'idea',
-  PROTOTYPE = 'prototype',
-  MVP = 'mvp',
-  LAUNCHED = 'launched',
-  SCALING = 'scaling',
+  IDEA ='idea',
+  PROTOTYPE ='prototype',
+   MVP='mvp',
+   LAUNCHED ='launched',
+  SCALING ='scaling',
 }
 
 export enum StartupStatus {
-  OPEN = 'open',
-  CLOSED = 'closed',
+  OPEN ='open',
+  CLOSED ='closed',
 }
 
 @Entity('startup_ideas')
@@ -33,35 +34,58 @@ export class StartupIdea {
   @JoinColumn({ name: 'owner_id' })
   owner: User;
 
-  @Column({ type: 'varchar', length: 160 })
+  @Column({
+    type: 'varchar',
+     length: 160,
+  })
   title: string;
 
-  @Column({ name: 'short_description', type: 'varchar', length: 255 })
+  @Column({
+    name:'short_description',
+     type:'varchar',
+    length:255,
+  })
   shortDescription: string;
 
-  @Column({ name: 'full_description', type: 'text' })
+  @Column({
+    name:'full_description',
+     type:'text',
+  })
   fullDescription: string;
 
-  @Column({ type: 'text', array: true, default: [] })
-  industries: string[];
+  @Column({
+    type:'text',
+    array:true,
+    default:[],
+  })
+  industries:string[];
 
   @Column({
     name: 'startup_stage',
-    type: 'enum',
-    enum: StartupStage,
+     type: 'enum',
+     enum: StartupStage,
     default: StartupStage.IDEA,
   })
   startupStage: StartupStage;
 
-  @Column({ type: 'enum', enum: StartupStatus, default: StartupStatus.OPEN })
+  @Column({
+    type:'enum',
+     enum: StartupStatus,
+    default:StartupStatus.OPEN,
+  })
   status: StartupStatus;
 
-  @OneToMany(() => CofounderRequirement, (req) => req.startupIdea)
+  @OneToMany(
+    () => CofounderRequirement,
+    (requirement) => requirement.startupIdea,
+  )
   requirements: CofounderRequirement[];
 
-  @CreateDateColumn({ name: 'created_at' })
+  @CreateDateColumn(
+    { name:'created_at' })
   createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
+  @UpdateDateColumn(
+  { name:'updated_at' })
   updatedAt: Date;
 }

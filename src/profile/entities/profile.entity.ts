@@ -11,6 +11,7 @@ import { User } from '../../user/entities/user.entity';
 
 export enum ProfileRole {
   TECHNICAL = 'technical',
+  PRODUCT = 'product',
   DESIGN = 'design',
   MARKETING = 'marketing',
   BUSINESS = 'business',
@@ -45,7 +46,6 @@ export class Profile {
   @Column({ name: 'available_weekly_commitment', default: 10 })
   availableWeeklyCommitment: number;
 
-  // Change: explicitly define the column type for nullable string fields so TypeORM can build PostgreSQL metadata correctly.
   @Column({ name: 'portfolio_url', type: 'varchar', nullable: true })
   portfolioUrl: string | null;
 

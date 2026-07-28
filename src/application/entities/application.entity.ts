@@ -19,18 +19,21 @@ export enum ApplicationStatus {
 }
 
 @Entity('applications')
-//@Unique(['requirement', 'candidate'])
+@Unique(['requirement', 'candidate'])
 export class Application {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  //@ManyToOne(() => CofounderRequirement, { onDelete: 'CASCADE' })
+  @ManyToOne(() => CofounderRequirement, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'requirement_id' })
   requirement: CofounderRequirement;
 
-  // @ManyToOne(() => User, { onDelete: 'CASCADE' })
+  @ManyToOne(() => User, { onDelete: 'CASCADE' })
   @JoinColumn({ name: 'candidate_id' })
   candidate: User;
+
+  @Column({ name: 'candidate_id' })
+  candidateId: string;
 
   @Column({
     type: 'enum',
