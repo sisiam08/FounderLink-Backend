@@ -50,4 +50,5 @@ export class Application {
 
   @UpdateDateColumn({ name: 'updated_at' })
   updatedAt: Date;
+
 }

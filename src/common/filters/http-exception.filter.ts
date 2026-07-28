@@ -8,8 +8,9 @@ export class HttpExceptionFilter implements ExceptionFilter {
     const request = context.getRequest<Request>();
     const response = context.getResponse<Response>();
 
-    let status: number;
-    let data: Record<string, unknown>;
+        if(exception instanceof HttpException){
+            status = exception.getStatus();
+            const res = exception.getResponse();
 
     if (exception instanceof HttpException) {
       status = exception.getStatus();
@@ -27,14 +28,14 @@ export class HttpExceptionFilter implements ExceptionFilter {
       data = { message: 'Internal Server Error' };
     }
 
-    response.status(status).json({
-      success: false,
-      data: {
-        statusCode: status,
-        ...data,
-        path: request.url,
-      },
-      timestamp: new Date().toISOString(),
-    });
-  }
+        response.status(status).json({
+            success: false,
+            data:{
+                statusCode: status,
+                ...data,
+                path: request.url
+            },
+            timestamp: new Date().toISOString()
+        })
+    }
 }
