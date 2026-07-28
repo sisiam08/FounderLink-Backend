@@ -82,6 +82,32 @@ return await this.startupRepo.find({
   }
 
 
+ private checkOwner(
+    startup: StartupIdea,
+    userId: string,
+  ): void {
+    if (startup.owner.id !== userId) {
+      throw new ForbiddenException(
+        'You can only modify your own startup idea',
+      );
+    }
+  }
+
+
+
+async updateStartup(
+    id: string,
+    userId: string,
+    updateStartupDto: UpdateStartupDto,
+  ): Promise<StartupIdea> {
+    const startup = await this.getStartupById(id);
+
+    this.checkOwner(startup, userId);
+
+    Object.assign(startup, updateStartupDto);
+
+    return await this.startupRepo.save(startup);
+  }
 
 
 

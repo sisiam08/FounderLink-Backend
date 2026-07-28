@@ -36,10 +36,25 @@ export class StartupController {
 
  @Get(':id')
   getStartupById(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
+    @Param('id', new ParseUUIDPipe({ version:'4'}))
     id: string,
   ) {
     return this.startupService.getStartupById(id);
+  }
+
+
+ @Patch(':id')
+  updateStartup(
+    @Param('id', new ParseUUIDPipe({ version: '4' }))
+    id: string,
+    @CurrentUser('userId') userId: string,
+    @Body() updateStartupDto: UpdateStartupDto,
+  ) {
+    return this.startupService.updateStartup(
+      id,
+      userId,
+      updateStartupDto,
+    );
   }
 
 
