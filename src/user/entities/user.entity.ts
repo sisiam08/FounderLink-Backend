@@ -1,4 +1,3 @@
-import { profile } from 'console';
 import { UserSession } from '../../auth/entities/user-session.entity';
 import { Profile } from '../../profile/entities/profile.entity';
 import { StartupIdea } from '../../startup/entities/startup-idea.entity';
@@ -85,4 +84,3 @@ export class User {
     @UpdateDateColumn({ name: 'updated_at' })
     updatedAt: Date;
 }
-
