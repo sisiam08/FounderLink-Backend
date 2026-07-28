@@ -9,8 +9,8 @@ import { User } from '../user/entities/user.entity';
 import { AuthModule } from '../auth/auth.module';
 import { Profile } from '../profile/entities/profile.entity';
 import { NotificationModule } from '../notification/notification.module';
-import { MessageGateway } from './messate.gatewaye';
 import { MessageController } from './message.controller';
+import { MessageGateway } from './message.gatewaye';
 
 @Module({
   imports: [
