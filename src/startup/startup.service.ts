@@ -109,7 +109,60 @@ async updateStartup(
     return await this.startupRepo.save(startup);
   }
 
+ async closeStartup(
+    id: string,
+    userId: string,
+  ): Promise<StartupIdea> {
+    const startup = await this.getStartupById(id);
 
+    this.checkOwner(startup, userId);
+
+    startup.status = StartupStatus.CLOSED;
+
+    return await this.startupRepo.save(startup);
+  }
+
+async deleteStartup(
+    id: string,
+    userId: string,
+  ): Promise<{ message: string }> {
+    const startup = await this.getStartupById(id);
+
+    this.checkOwner(startup, userId);
+
+    await this.startupRepo.remove(startup);
+
+    return {
+      message: 'Startup idea deleted successfully',
+    };
+  }
+
+  async addRequirement(
+    ideaId: string,
+    userId: string,
+    createRequirementDto: CreateRequirementDto,
+  ): Promise<CofounderRequirement> {
+    const startup = await this.getStartupById(ideaId);
+
+    this.checkOwner(startup, userId);
+
+    if (startup.status === StartupStatus.CLOSED) {
+      throw new BadRequestException(
+        'Cannot add a requirement to a closed startup idea',
+      );
+    }
+
+    const requirement = this.requirementRepo.create({
+      startupIdea: startup,
+      requiredRole: createRequirementDto.requiredRole,
+      requiredSkills: createRequirementDto.requiredSkills,
+      requiredWeeklyCommitment:
+        createRequirementDto.requiredWeeklyCommitment,
+      equityOffered: createRequirementDto.equityOffered,
+    });
+
+    return await this.requirementRepo.save(requirement);
+  }
 
 
 

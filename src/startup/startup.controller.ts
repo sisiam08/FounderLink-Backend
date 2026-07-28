@@ -36,7 +36,8 @@ export class StartupController {
 
  @Get(':id')
   getStartupById(
-    @Param('id', new ParseUUIDPipe({ version:'4'}))
+    @Param('id', new ParseUUIDPipe(
+      { version:'4'}))
     id: string,
   ) {
     return this.startupService.getStartupById(id);
@@ -45,7 +46,8 @@ export class StartupController {
 
  @Patch(':id')
   updateStartup(
-    @Param('id', new ParseUUIDPipe({ version: '4' }))
+    @Param('id', new ParseUUIDPipe(
+      { version: '4' }))
     id: string,
     @CurrentUser('userId') userId: string,
     @Body() updateStartupDto: UpdateStartupDto,
@@ -58,7 +60,36 @@ export class StartupController {
   }
 
 
+   @Patch(':id/close')
+  closeStartup(
+    @Param('id', new ParseUUIDPipe(
+      { version:'4'}))
+    id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.startupService.closeStartup(id, userId);
+  }
 
+@Delete(':id')
+  deleteStartup(
+    @Param('id', new ParseUUIDPipe({ version: '4' }))
+    id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.startupService.deleteStartup(id, userId);
+  }
 
-
+  @Post(':ideaId/requirements')
+  addRequirement(
+    @Param('ideaId', new ParseUUIDPipe({ version: '4' }))
+    ideaId: string,
+    @CurrentUser('userId') userId: string,
+    @Body() createRequirementDto: CreateRequirementDto,
+  ) {
+    return this.startupService.addRequirement(
+      ideaId,
+      userId,
+      createRequirementDto,
+    );
+  }
 }
