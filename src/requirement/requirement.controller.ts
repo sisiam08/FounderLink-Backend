@@ -33,6 +33,8 @@ export class RequirementController {
     return this.requirementService.closeRequirement(id, userId);
   }
 
+  
+
   @Delete(':id')
   async delete(@Param('id') id: string, @CurrentUser('userId') userId: string) {
     await this.requirementService.deleteRequirement(id, userId);
