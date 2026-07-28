@@ -392,19 +392,19 @@ export class AuthService {
     }
   }
 
-  async getActiveSessions(userId: string):Promise<Partial<UserSession>[]>{
+  async getActiveSessions(userId: string): Promise<Partial<UserSession>[]> {
     const sessions = await this.sessionService.getActiveSessions(userId);
 
-    if(sessions.length == 0){
-      throw new NotFoundException("No active sessions found!")
+    if (sessions.length == 0) {
+      throw new NotFoundException('No active sessions found!');
     }
-    return sessions.map((s)=>({
+    return sessions.map((s) => ({
       id: s.id,
       ipAddress: s.ipAddress,
       userAgent: s.userAgent,
       expiresAt: s.expiresAt,
       lastActiveAt: s.lastActiveAt,
-      createdAt: s.createdAt
+      createdAt: s.createdAt,
     }));
   }
 }

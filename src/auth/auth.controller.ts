@@ -53,13 +53,13 @@ export class AuthController {
   @Post('signup')
   async signup(
     @Body() payload: SignupDto,
-  ): Promise<{message: string, expiresAt: Date}> {
+  ): Promise<{ message: string; expiresAt: Date }> {
     return this.authService.signup(payload);
   }
 
   @Public()
   @Post('signup/verify-otp')
-  async verifySignupOTP(@Body() payload: VerifyOtpDto): Promise<Partial<User>>{
+  async verifySignupOTP(@Body() payload: VerifyOtpDto): Promise<Partial<User>> {
     return this.authService.verifySignupOTP(payload);
   }
 
@@ -112,7 +112,7 @@ export class AuthController {
     };
   }
 
- @Public()
+  @Public()
   @Post('forgot-password')
   async forgotPassword(@Body() payload: ForgotPasswordDto) {
     return this.authService.forgotPassword(payload);
@@ -131,8 +131,15 @@ export class AuthController {
   }
 
   @Patch('change-password')
-  async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() payload: ChangePasswordDto) {
-    return this.authService.changePassword(user.userId, user.sessionId, payload);
+  async changePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() payload: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(
+      user.userId,
+      user.sessionId,
+      payload,
+    );
   }
 
   @Get('active-sessions')

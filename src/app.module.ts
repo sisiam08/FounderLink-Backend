@@ -10,13 +10,13 @@ import { MailModule } from './mail/mail.module';
 import { MessageModule } from './message/message.module';
 import { EventEmitterModule } from '@nestjs/event-emitter';
 import { NotificationModule } from './notification/notification.module';
+import { StartupModule } from './startup/startup.module';
 import { UserModule } from './user/user.module';
 
 @Module({
   imports: [
     ConfigModule.forRoot({
       isGlobal: true,
-    
     }),
 
     TypeOrmModule.forRootAsync({
@@ -47,6 +47,7 @@ import { UserModule } from './user/user.module';
     MailModule,
     MessageModule,
     NotificationModule,
+    StartupModule,
     ProfileModule,
     UserModule
   ],

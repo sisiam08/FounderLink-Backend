@@ -26,8 +26,8 @@ export class MessageService {
     private readonly applicationRepo: Repository<Application>,
     private readonly eventEmitter: EventEmitter2,
     private readonly notificationService: NotificationService,
-    private readonly notificationGateway: NotificationGateway
-  ) { }
+    private readonly notificationGateway: NotificationGateway,
+  ) {}
 
   async assertRoomAccess(
     applicationId: string,
@@ -123,7 +123,10 @@ export class MessageService {
 
       const application = await this.applicationRepo.findOne({
         where: { id: applicationId },
-        relations: { requirement: { startupIdea: { owner: { profile: true } } }, candidate: { profile: true } },
+        relations: {
+          requirement: { startupIdea: { owner: { profile: true } } },
+          candidate: { profile: true },
+        },
       });
 
       if (!application) {
@@ -134,22 +137,35 @@ export class MessageService {
       const candidateId = application.candidate.id;
 
       const recipientId = ownerId === userId ? candidateId : ownerId;
-      const senderName = ownerId === userId ? application.requirement.startupIdea.owner.fullName : application.candidate.fullName;
-      const senderImage = ownerId === userId ? application.requirement.startupIdea.owner.profile.photoUrl : application.candidate.profile.photoUrl;
+      const senderName =
+        ownerId === userId
+          ? application.requirement.startupIdea.owner.fullName
+          : application.candidate.fullName;
+      const senderImage =
+        ownerId === userId
+          ? application.requirement.startupIdea.owner.profile.photoUrl
+          : application.candidate.profile.photoUrl;
 
-      await this.notificationService.sendNotification(recipientId, NotificationType.NEW_MESSAGE, {
-        applicationId: applicationId,
-        messagePreview: content.slice(0, 100),
-        senderId: userId,
-        senderName: senderName,
-        senderImage: senderImage
-      })
+      await this.notificationService.sendNotification(
+        recipientId,
+        NotificationType.NEW_MESSAGE,
+        {
+          applicationId: applicationId,
+          messagePreview: content.slice(0, 100),
+          senderId: userId,
+          senderName: senderName,
+          senderImage: senderImage,
+        },
+      );
 
       const unreadCountSender = await this.getUnreadCount(userId);
       this.notificationGateway.emitUnreadCount(userId, unreadCountSender);
 
       const unreadCountRecipient = await this.getUnreadCount(recipientId);
-      this.notificationGateway.emitUnreadCount(recipientId, unreadCountRecipient);
+      this.notificationGateway.emitUnreadCount(
+        recipientId,
+        unreadCountRecipient,
+      );
 
       return savedMessage;
     } catch (error) {

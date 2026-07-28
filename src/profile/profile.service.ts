@@ -1,6 +1,9 @@
-import { ConflictException, Injectable,NotFoundException,
-  BadRequestException
- } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+  BadRequestException,
+} from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { User } from '../user/entities/user.entity';
@@ -28,9 +31,7 @@ export class ProfileService {
     });
 
     if (existingProfile) {
-      throw new ConflictException(
-        'Profile already exists for this user',
-      );
+      throw new ConflictException('Profile already exists for this user');
     }
 
     const profile = this.profileRepo.create({
@@ -40,10 +41,8 @@ export class ProfileService {
       bio: createProfileDto.bio ?? null,
       role: createProfileDto.role,
       skills: createProfileDto.skills,
-      interestedIndustries:
-        createProfileDto.interestedIndustries,
-      availableWeeklyCommitment:
-        createProfileDto.availableWeeklyCommitment,
+      interestedIndustries: createProfileDto.interestedIndustries,
+      availableWeeklyCommitment: createProfileDto.availableWeeklyCommitment,
       portfolioUrl: createProfileDto.portfolioUrl ?? null,
       githubUrl: createProfileDto.githubUrl ?? null,
       linkedinUrl: createProfileDto.linkedinUrl ?? null,
@@ -54,77 +53,63 @@ export class ProfileService {
     return await this.profileRepo.save(profile);
   }
 
-
-
-
-async getMyProfile(userId: string): Promise<Profile> {
-  const profile =await this.profileRepo.findOne({
-    where: {
-    user: {
-     id: userId,
+  async getMyProfile(userId: string): Promise<Profile> {
+    const profile = await this.profileRepo.findOne({
+      where: {
+        user: {
+          id: userId,
+        },
       },
-    },
-  });
+    });
 
-  if (profile ==null) {
-    throw new NotFoundException(
-      'Profile not found for this user',
-    );
+    if (profile == null) {
+      throw new NotFoundException('Profile not found for this user');
+    }
+
+    return profile;
   }
 
-  return profile;
-}
-
-
-async updateMyProfile(
-  userId: string,
+  async updateMyProfile(
+    userId: string,
     updateProfileDto: UpdateProfileDto,
-): Promise<Profile>{
-   const profile =await this.getMyProfile(userId);
+  ): Promise<Profile> {
+    const profile = await this.getMyProfile(userId);
 
-      Object.assign(profile, updateProfileDto);
+    Object.assign(profile, updateProfileDto);
 
-  return await this.profileRepo.save(profile);
-}
-
-
-async getProfileByUserId(userId: string): Promise<Profile> {
-  const profile= await this.profileRepo.findOne({
-    where: {
-      user: {
-      id: userId,
-    },
-    },
-   });
-
-  if (profile ==null){
-    throw new NotFoundException(
-          `Profile for user with id ${userId} not found`,
-  );
+    return await this.profileRepo.save(profile);
   }
 
-  return profile;
-}
+  async getProfileByUserId(userId: string): Promise<Profile> {
+    const profile = await this.profileRepo.findOne({
+      where: {
+        user: {
+          id: userId,
+        },
+      },
+    });
 
+    if (profile == null) {
+      throw new NotFoundException(
+        `Profile for user with id ${userId} not found`,
+      );
+    }
 
-async uploadProfilePhoto(
-  userId: string,
+    return profile;
+  }
+
+  async uploadProfilePhoto(
+    userId: string,
     file: Express.Multer.File,
-): Promise<Profile> {
-  if (!file) {
-      throw new BadRequestException(
-      'Profile photo file is required',
-    );
+  ): Promise<Profile> {
+    if (!file) {
+      throw new BadRequestException('Profile photo file is required');
+    }
+
+    const profile = await this.getMyProfile(userId);
+
+    profile.photoUrl = file.path.replace(/\\/g, '/');
+
+    return await this.profileRepo.save(profile);
   }
-
-  const profile =await this.getMyProfile(userId);
-
-    profile.photoUrl =file.path.replace(/\\/g, '/');
-
-      return await this.profileRepo.save(profile);
 }
-
-
-
-}
-
