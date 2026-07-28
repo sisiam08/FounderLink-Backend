@@ -34,12 +34,12 @@ export class ApplicationService {
     if (application.candidate.id !== userId) {
       throw new ForbiddenException(
         'You can only withdraw your own application',
-      )
+      );
     }
     if (application.status !== ApplicationStatus.PENDING) {
       throw new BadRequestException(
         'Only pending applications can be withdrawn',
-      )
+      );
     }
 
     application.status = ApplicationStatus.WITHDRAWN;
@@ -53,7 +53,7 @@ export class ApplicationService {
     if (ownerId !== userId) {
       throw new ForbiddenException(
         'Only the requirement owner can accept applications',
-      )
+      );
     }
     if (application.status !== ApplicationStatus.PENDING) {
       throw new BadRequestException(
@@ -87,10 +87,9 @@ export class ApplicationService {
     return this.applicationRepo.find({
       where: { candidate: { id: userId } },
       relations: { requirement: { startupIdea: true } },
-      order: { createdAt: 'DESC' },
+      order: { createdAt: 'DESC' },//নতুন ডাটাটি সবার আগে/উপরে থাকবে, এবং পুরোনো ডাটাগুলো নিচে থাকবে
     });
   }
-
   async getApplicationsForRequirement(
     requirementId: string,
     userId: string,
@@ -114,7 +113,6 @@ export class ApplicationService {
       order: { createdAt: 'DESC' },
     });
   }
-
 
   private async getApplicationWithRelations(
     applicationId: string,
