@@ -14,11 +14,18 @@ export class AdminStatsController {
   async getOverview() {
     return this.statsService.getOverview();
   }
+  @Get('users')
+  async getUserSignups(@Query('from') from?: string, @Query('to') to?: string) {
+    return this.statsService.getUserSignups(from, to);
+  }
 
-
-
+   @Get('applications')
+  async getApplicationStats() {
+    return this.statsService.getApplicationStats();
+  }
   @Get('requirements')
   async getRequirementStats() {
     return this.statsService.getRequirementStats();
   }
+  
 }
