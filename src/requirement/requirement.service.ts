@@ -194,4 +194,39 @@ export class RequirementService {
       );
     }
   }
+
+
+  async listRequirements(status?: string, role?: string, page = 1, limit = 20) {
+    const qb = this.requirementRepo
+      .createQueryBuilder('req')
+      .leftJoinAndSelect('req.startupIdea', 'idea')
+      .leftJoinAndSelect('idea.owner', 'owner');
+
+    if (status) {
+      qb.andWhere('req.status = :status', { status });
+    }
+    if (role) {
+      qb.andWhere('req.requiredRole = :role', { role });
+    }
+
+    qb.orderBy('req.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+
+    const [requirements, total] = await qb.getManyAndCount();
+    return { requirements, total, page, limit };
+  }
+
+  async forceCloseRequirement(id: string, adminId: string) {
+    const requirement = await this.requirementRepo.findOne({ where: { id } });
+    if (!requirement) {
+      throw new NotFoundException('Requirement not found');
+    }
+
+    requirement.status = RequirementStatus.CLOSED;
+    await this.requirementRepo.save(requirement);
+
+    return { id: requirement.id, status: requirement.status };
+  }
+
 }

@@ -10,6 +10,8 @@ import {
 import { RequirementService } from './requirement.service';
 import { UpdateRequirementDto } from './dto/update-requirement.dto';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { SystemRole } from 'src/user/entities/user.entity';
 
 @Controller('requirements')
 export class RequirementController {
@@ -58,5 +60,30 @@ export class RequirementController {
     @CurrentUser('userId') userId: string,
   ) {
     return this.requirementService.getRequirementById(id, userId);
+  }
+
+  @Get('requirements')
+  @Roles(SystemRole.ADMIN, SystemRole.SUPER_ADMIN)
+  async listRequirements(
+    @Query('status') status?: string,
+    @Query('role') role?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.requirementService.listRequirements(
+      status,
+      role,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
+  }
+
+  @Patch('requirements/:id/close')
+  @Roles(SystemRole.ADMIN, SystemRole.SUPER_ADMIN)
+  async forceCloseRequirement(
+    @Param('id') id: string,
+    @CurrentUser('userId') adminId: string,
+  ) {
+    return this.requirementService.forceCloseRequirement(id, adminId);
   }
 }
