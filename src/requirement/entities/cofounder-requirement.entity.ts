@@ -14,14 +14,15 @@ export enum RequirementStatus {
   OPEN = 'open',
   CLOSED = 'closed',
 }
+
 @Entity('cofounder_requirements')
 export class CofounderRequirement {
   @PrimaryGeneratedColumn('uuid')
   id: string;
 
-  // @ManyToOne(() => StartupIdea, (idea) => idea.requirements, {
-  //   onDelete: 'CASCADE',
-  // })
+  @ManyToOne(() => StartupIdea, (idea) => idea.requirements, {
+    onDelete: 'CASCADE',
+  })
   @JoinColumn({ name: 'startup_idea_id' })
   startupIdea: StartupIdea;
 

@@ -1,69 +1,86 @@
-import {
-  Entity,
-  PrimaryGeneratedColumn,
-  Column,
-  CreateDateColumn,
-  UpdateDateColumn,
-} from 'typeorm';
+import { UserSession } from '../../auth/entities/user-session.entity';
 import { Profile } from '../../profile/entities/profile.entity';
 import { StartupIdea } from '../../startup/entities/startup-idea.entity';
-import { UserSession } from '../../auth/entities/user-session.entity';
+import {
+    Entity,
+    PrimaryGeneratedColumn,
+    Column,
+    OneToMany,
+    CreateDateColumn,
+    UpdateDateColumn,
+    OneToOne,
+} from 'typeorm';
 
 export enum SystemRole {
-  USER = 'user',
-  ADMIN = 'admin',
-  SUPER_ADMIN = 'super_admin',
+    USER = 'user',
+    ADMIN = 'admin',
+    SUPER_ADMIN = 'super_admin',
 }
 
 export enum UserStatus {
-  ACTIVE = 'active',
-  SUSPENDED = 'suspended',
-  BANNED = 'banned',
+    ACTIVE = 'active',
+    SUSPENDED = 'suspended',
+    BANNED = 'banned',
 }
 
 @Entity('users')
 export class User {
-  @PrimaryGeneratedColumn('uuid')
-  id: string;
+    @PrimaryGeneratedColumn('uuid')
+    id: string;
 
-  @Column({ unique: true })
-  email: string;
+    @Column({ name: 'full_name', type: 'varchar' })
+    fullName: string;
 
-  @Column({ name: 'password_hash', type: 'varchar', nullable: true, select: false })
-  passwordHash: string | null;
+    @Column({ unique: true })
+    email: string;
 
-  @Column({ name: 'google_id', type: 'varchar', nullable: true, unique: true, select: false })
-  googleId: string | null;
+    @Column({
+        type: 'varchar',
+        nullable: true,
+        select: false,
+    })
+    password: string | null;
 
-  @Column({ name: 'full_name', length: 120 })
-  fullName: string;
+    @Column({
+        name: 'google_id',
+        type: 'varchar',
+        nullable: true,
+        unique: true,
+        select: false,
+    })
+    googleId: string | null;
 
-  @Column({
-    name: 'system_role',
-    type: 'enum',
-    enum: SystemRole,
-    default: SystemRole.USER,
-  })
-  systemRole: SystemRole;
+    @Column({
+        name: 'system_role',
+        type: 'enum',
+        enum: SystemRole,
+        default: SystemRole.USER,
+    })
+    systemRole: SystemRole;
 
-  @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
-  status: UserStatus;
+    @Column({ type: 'enum', enum: UserStatus, default: UserStatus.ACTIVE })
+    status: UserStatus;
 
-  @Column({ name: 'suspended_reason', type: 'varchar', nullable: true, select: false })
-  suspendedReason: string | null;
+    @Column({
+        name: 'suspended_reason',
+        type: 'varchar',
+        nullable: true,
+        select: false,
+    })
+    suspendedReason: string | null;
 
-  // @OneToOne(() => Profile, (profile) => profile.user)
-  // profile: Profile;
+    @OneToMany(() => UserSession, (session) => session.user)
+    sessions: UserSession[];
 
-  // @OneToMany(() => StartupIdea, (idea) => idea.owner)
-  // startupIdeas: StartupIdea[];
+    @OneToOne(()=>Profile, (profile)=>profile.user)
+    profile: Profile;
 
-  // @OneToMany(() => UserSession, (session) => session.user)
-  // sessions: UserSession[];
+    @OneToMany(()=>StartupIdea, (startupIdea)=>(startupIdea.owner))
+    startupIdeas: StartupIdea[];
 
-  @CreateDateColumn({ name: 'created_at' })
-  createdAt: Date;
+    @CreateDateColumn({ name: 'created_at' })
+    createdAt: Date;
 
-  @UpdateDateColumn({ name: 'updated_at' })
-  updatedAt: Date;
+    @UpdateDateColumn({ name: 'updated_at' })
+    updatedAt: Date;
 }
