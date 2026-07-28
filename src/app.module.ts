@@ -1,7 +1,6 @@
 import { Module } from '@nestjs/common';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { TypeOrmModule } from '@nestjs/typeorm';
-
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
 import { ProfileModule } from './profile/profile.module';
@@ -48,7 +47,7 @@ import { UserModule } from './user/user.module';
     MailModule,
     MessageModule,
     NotificationModule,
-    RequirementModule
+    RequirementModule,
     StartupModule,
     ProfileModule,
     UserModule
