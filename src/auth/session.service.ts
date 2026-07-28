@@ -1,5 +1,5 @@
 import { Injectable, UnauthorizedException } from '@nestjs/common';
-import { User } from 'src/user/entities/user.entity';
+import { User } from '../user/entities/user.entity';
 import { SessionMetaData } from './interfaces/session.interface';
 import { UserSession } from './entities/user-session.entity';
 import { compareToken, generateToken, hashToken } from './token.utils';
@@ -105,24 +105,24 @@ export class SessionService {
 
   async revokeAllSessions(userId: string, sessionId?: string): Promise<void> {
     await this.sessionRepo.update(
-      { 
-        userId, 
+      {
+        userId,
         revoked: false,
-        ...(sessionId ? { id : Not(sessionId)}: {})
+        ...(sessionId ? { id: Not(sessionId) } : {}),
       },
       { revoked: true },
     );
   }
 
-  async getActiveSessions(userId: string): Promise<UserSession[]>{
+  async getActiveSessions(userId: string): Promise<UserSession[]> {
     return await this.sessionRepo.find({
-      where:{
+      where: {
         userId,
-        revoked: false
+        revoked: false,
       },
-      order:{
-        createdAt: 'DESC'
-      }
-    })
+      order: {
+        createdAt: 'DESC',
+      },
+    });
   }
 }

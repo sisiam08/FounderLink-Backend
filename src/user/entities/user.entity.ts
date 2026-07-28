@@ -1,4 +1,6 @@
-import { UserSession } from 'src/auth/entities/user-session.entity';
+import { UserSession } from '../../auth/entities/user-session.entity';
+import { Profile } from '../../profile/entities/profile.entity';
+import { StartupIdea } from '../../startup/entities/startup-idea.entity';
 import {
     Entity,
     PrimaryGeneratedColumn,
@@ -6,6 +8,7 @@ import {
     OneToMany,
     CreateDateColumn,
     UpdateDateColumn,
+    OneToOne,
 } from 'typeorm';
 
 export enum SystemRole {
@@ -68,6 +71,12 @@ export class User {
 
     @OneToMany(() => UserSession, (session) => session.user)
     sessions: UserSession[];
+
+    @OneToOne(()=>Profile, (profile)=>profile.user)
+    profile: Profile;
+
+    @OneToMany(()=>StartupIdea, (startupIdea)=>(startupIdea.owner))
+    startupIdeas: StartupIdea[];
 
     @CreateDateColumn({ name: 'created_at' })
     createdAt: Date;

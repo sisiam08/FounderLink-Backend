@@ -2,14 +2,12 @@ import {
   BadRequestException,
   ConflictException,
   ForbiddenException,
-  HttpException,
   Injectable,
-  InternalServerErrorException,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
-import { User, UserStatus } from 'src/user/entities/user.entity';
+import { User, UserStatus } from '../user/entities/user.entity';
 import { Repository } from 'typeorm';
 import bcrypt from 'bcrypt';
 import { ConfigService } from '@nestjs/config';
@@ -21,7 +19,7 @@ import { JwtService, TokenExpiredError } from '@nestjs/jwt';
 import { SessionService } from './session.service';
 import { OTPService } from './otp.service';
 import { OtpPurpose } from './entities/otp.entity';
-import { MailService } from 'src/mail/mail.service';
+import { MailService } from '../mail/mail.service';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
@@ -394,19 +392,19 @@ export class AuthService {
     }
   }
 
-  async getActiveSessions(userId: string):Promise<Partial<UserSession>[]>{
+  async getActiveSessions(userId: string): Promise<Partial<UserSession>[]> {
     const sessions = await this.sessionService.getActiveSessions(userId);
 
-    if(sessions.length == 0){
-      throw new NotFoundException("No active sessions found!")
+    if (sessions.length == 0) {
+      throw new NotFoundException('No active sessions found!');
     }
-    return sessions.map((s)=>({
+    return sessions.map((s) => ({
       id: s.id,
       ipAddress: s.ipAddress,
       userAgent: s.userAgent,
       expiresAt: s.expiresAt,
       lastActiveAt: s.lastActiveAt,
-      createdAt: s.createdAt
+      createdAt: s.createdAt,
     }));
   }
 }
