@@ -54,6 +54,17 @@ export class MailService {
 
     const text = `${intro}\n\nYour verification code is: ${code}\nThis code expires in ${expiryInMin} minute(s).\n\nIf you did not request this, you can ignore this email.`;
 
+    const html = `
+      <div style="font-family: Arial, Helvetica, sans-serif; line-height: 1.6; color: #1a1a1a;">
+        <h2>FounderLink</h2>
+        <p>${intro}</p>
+        <p style="font-size: 14px; margin-bottom: 4px;">Your verification code is:</p>
+        <h1 style="letter-spacing: 6px; margin: 0 0 8px 0; color: #2c3e50;">${code}</h1>
+        <p style="font-size: 13px; color: #666;">This code expires in ${expiryInMin} minute(s).</p>
+        <p style="font-size: 13px; color: #666;">If you did not request this, you can safely ignore this email.</p>
+      </div>
+    `;
+
     try {
       const transporter = this.getTransporter();
       await transporter.sendMail({
@@ -61,6 +72,7 @@ export class MailService {
         to,
         subject,
         text,
+        html,
       });
     } catch (error) {
       if (error instanceof HttpException) throw error;
