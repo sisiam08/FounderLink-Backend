@@ -7,12 +7,15 @@ import {
   ParseUUIDPipe,
   Patch,
   Post,
+  Query,
 } from '@nestjs/common';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { CreateRequirementDto } from '../requirement/dto/create-requirement.dto';
 import { CreateStartupDto } from './dto/create-startup.dto';
 import { UpdateStartupDto } from './dto/update-startup.dto';
 import { StartupService } from './startup.service';
+import { Roles } from 'src/common/decorators/roles.decorator';
+import { SystemRole } from 'src/user/entities/user.entity';
 
 @Controller('startups')
 export class StartupController {
@@ -92,4 +95,27 @@ export class StartupController {
       createRequirementDto,
     );
   }
+
+  // for admin
+@Roles(SystemRole.SUPER_ADMIN,SystemRole.ADMIN)
+@Get('all')
+  async listStartups(
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.startupService.listStartups(
+      status,
+      search,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
+  }
+
+
+
+
+
+
 }

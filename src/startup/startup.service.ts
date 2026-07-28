@@ -166,5 +166,34 @@ async deleteStartup(
 
 
 
+// for admin
+
+async listStartups(status?: string, search?: string, page = 1, limit = 20) {
+    const qb = this.startupRepo
+      .createQueryBuilder('idea')
+      .leftJoinAndSelect('idea.owner', 'owner');
+ 
+    if (status) {
+      qb.andWhere('idea.status = :status', { status });
+    }
+    if (search) {
+      qb.andWhere(
+        '(idea.title ILIKE :search OR idea.shortDescription ILIKE :search)',
+        { search: `%${search}%` },
+      );
+    }
+ 
+    qb.orderBy('idea.createdAt', 'DESC')
+      .skip((page - 1) * limit)
+      .take(limit);
+ 
+    const [startups, total] = await qb.getManyAndCount();
+    return { startups, total, page, limit };
+  }
+
+
+
+
+
 }
 
