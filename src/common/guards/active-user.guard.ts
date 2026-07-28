@@ -1,34 +1,27 @@
-import {
-  Injectable,
-  CanActivate,
-  ExecutionContext,
-  ForbiddenException,
-} from '@nestjs/common';
-import { Reflector } from '@nestjs/core';
-import { RequestUser } from '../decorators/current-user.decorator';
-import { IS_PUBLIC_KEY } from '../decorators/public.decorator';
-
-interface RequestWithUser {
-  user?: RequestUser;
-}
+import { CanActivate, ExecutionContext, ForbiddenException, Injectable } from "@nestjs/common";
+import { Reflector } from "@nestjs/core";
+import { Observable } from "rxjs";
+import { IS_PUBLIC_KEY } from "../decorators/public.decorator";
+import { AuthenticatedRequest } from "src/auth/interfaces/auth.interface";
+import { UserStatus } from "src/user/entities/user.entity";
 
 @Injectable()
-export class ActiveUserGuard implements CanActivate {
-  constructor(private reflector: Reflector) {}
+export class ActiveUserGuard implements CanActivate{
+    constructor(private readonly reflector: Reflector){}
 
-  canActivate(context: ExecutionContext): boolean {
-    const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [
-      context.getHandler(),
-      context.getClass(),
-    ]);
-    if (isPublic) return true;
+    canActivate(context: ExecutionContext): boolean | Promise<boolean> | Observable<boolean> {
+        const isPublic = this.reflector.getAllAndOverride<boolean>(IS_PUBLIC_KEY, [context.getHandler(), context.getClass()]);
 
-    const request = context.switchToHttp().getRequest<RequestWithUser>();
-    const user = request.user;
-    // If user entity enum is not exported, compare against the string value
-    if (!user || user.status !== 'ACTIVE') {
-      throw new ForbiddenException('Account is suspended or banned');
+        if (isPublic) return true;
+
+        const request = context.switchToHttp().getRequest<AuthenticatedRequest>();
+
+        const user = request.user;
+
+        if(!user || user.status !== UserStatus.ACTIVE){
+            throw new ForbiddenException("Account is suspended or banned");
+        }
+
+        return true;        
     }
-    return true;
-  }
 }

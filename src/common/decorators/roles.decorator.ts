@@ -1,5 +1,5 @@
 import { SetMetadata } from '@nestjs/common';
+import { SystemRole } from 'src/user/entities/user.entity';
 
-export const ROLES_KEY = 'roles';
-// Accept role names as strings to avoid relying on an exported SystemRole type
-export const Roles = (...roles: string[]) => SetMetadata(ROLES_KEY, roles);
+export const ROLE_KEY = 'roles';
+export const Roles = (...roles: SystemRole[]) => SetMetadata(ROLE_KEY, roles);
