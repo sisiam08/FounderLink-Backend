@@ -12,6 +12,7 @@ import { NotificationModule } from './notification/notification.module';
 import { RequirementModule } from './requirement/requirement.module';
 import { StartupModule } from './startup/startup.module';
 import { UserModule } from './user/user.module';
+import { ApplicationModule } from './application/application.module';
 
 @Module({
   imports: [
@@ -50,7 +51,8 @@ import { UserModule } from './user/user.module';
     RequirementModule,
     StartupModule,
     ProfileModule,
-    UserModule
+    UserModule,
+    ApplicationModule
   ],
   controllers: [AppController],
 
