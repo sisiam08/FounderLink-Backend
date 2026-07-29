@@ -6,10 +6,13 @@ import { Profile } from '../profile/entities/profile.entity';
 import { RequirementService } from './requirement.service';
 import { RequirementController } from './requirement.controller';
 import { CompatibilityService } from './compatibility.service';
+import { Application } from 'src/application/entities/application.entity';
+import { NotificationModule } from 'src/notification/notification.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CofounderRequirement, StartupIdea, Profile]),
+    TypeOrmModule.forFeature([CofounderRequirement, StartupIdea, Profile, Application]),
+    NotificationModule,
   ],
   controllers: [RequirementController],
   providers: [RequirementService, CompatibilityService],

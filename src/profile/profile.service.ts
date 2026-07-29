@@ -60,6 +60,9 @@ export class ProfileService {
           id: userId,
         },
       },
+      relations: {
+        user: true,
+      },
     });
 
     if (profile == null) {
@@ -87,6 +90,7 @@ export class ProfileService {
           id: userId,
         },
       },
+      relations: { user: true },
     });
 
     if (profile == null) {

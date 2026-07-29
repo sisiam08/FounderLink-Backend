@@ -13,12 +13,12 @@ export class NotificationService {
   ) {}
 
   async sendNotification(
-    userId: string,
+    receiverId: string,
     type: NotificationType,
     payload: Record<string, unknown>,
   ): Promise<Notification> {
     const notification = this.notificationRepo.create({
-      user: { id: userId },
+      user: { id: receiverId },
       type,
       payload,
       isRead: false,
@@ -26,7 +26,7 @@ export class NotificationService {
 
     const savedNotification = await this.notificationRepo.save(notification);
 
-    this.notificationGateway.emitNotification(userId, savedNotification);
+    this.notificationGateway.emitNotification(receiverId, savedNotification);
 
     return savedNotification;
   }
