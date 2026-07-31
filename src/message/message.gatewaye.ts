@@ -20,11 +20,15 @@ import { OnEvent } from '@nestjs/event-emitter';
 import { SendMessageDto } from './dto/send-message.dto';
 
 @WebSocketGateway({
+  cors: {
+    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    credentials: true,
+  },
   namespace: '/chat',
 })
 export class MessageGateway implements OnGatewayConnection {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
 
   constructor(
     private readonly jwtService: JwtService,
@@ -70,36 +74,56 @@ export class MessageGateway implements OnGatewayConnection {
       client.data.userId = payload.userId;
       client.data.sessionId = payload.sessionId;
       client.data.joinedApplications = new Set<string>();
-    } catch (error) {
-      void client.disconnect();
-      throw error;
+    } catch {
+      client.emit('error', {
+        message: 'Authentication failed',
+      });
+      client.disconnect();
     }
   }
 
   @SubscribeMessage('join-room')
   async handleJoinRoom(
-    @MessageBody() applicationId: string,
+    @MessageBody() payload: string | { applicationId: string },
     @ConnectedSocket() client: AuthenticatedSocket,
-  ) {
+  ): Promise<{ success: boolean }> {
+    const applicationId = typeof payload === 'object' && payload ? payload.applicationId : payload;
+    if (!client.data.joinedApplications) {
+      client.data.joinedApplications = new Set<string>();
+    }
     if (!client.data.joinedApplications.has(applicationId)) {
-      void (await this.messageService.assertRoomAccess(
+      await this.messageService.assertRoomAccess(
         applicationId,
         client.data.userId,
-      ));
+      );
       client.data.joinedApplications.add(applicationId);
     }
     const room = this.createRoom(applicationId);
-    void client.join(room);
+    await client.join(room);
     await this.messageService.markAsRead(applicationId, client.data.userId);
+    return { success: true };
   }
 
   @SubscribeMessage('leave-room')
-  handleLeaveRoom(
-    @MessageBody() applicationId: string,
+  async handleLeaveRoom(
+    @MessageBody() payload: string | { applicationId: string },
     @ConnectedSocket() client: AuthenticatedSocket,
   ) {
+    const applicationId = typeof payload === 'object' && payload ? payload.applicationId : payload;
     const room = this.createRoom(applicationId);
-    void client.leave(room);
+    await client.leave(room);
+    client.data.joinedApplications?.delete(applicationId);
+  }
+
+  @SubscribeMessage('mark-as-read')
+  async handleMarkAsRead(
+    @MessageBody() payload: string | { applicationId: string },
+    @ConnectedSocket() client: AuthenticatedSocket,
+  ): Promise<{ success: boolean }> {
+    const applicationId = typeof payload === 'object' && payload ? payload.applicationId : payload;
+    if (!applicationId || !client.data.userId) return { success: false };
+    await this.messageService.markAsRead(applicationId, client.data.userId);
+    return { success: true };
   }
 
   @SubscribeMessage('send-message')
@@ -125,8 +149,16 @@ export class MessageGateway implements OnGatewayConnection {
         error: 'applicationId and content are required',
       };
     }
+
+    // Auto-join room if not joined yet
+    if (!client.data.joinedApplications) {
+      client.data.joinedApplications = new Set<string>();
+    }
     if (!client.data.joinedApplications.has(applicationId)) {
-      throw new WsException('You are not in the room');
+      await this.messageService.assertRoomAccess(applicationId, userId);
+      client.data.joinedApplications.add(applicationId);
+      const room = this.createRoom(applicationId);
+      await client.join(room);
     }
 
     try {
@@ -136,31 +168,42 @@ export class MessageGateway implements OnGatewayConnection {
         success: true,
         message: {
           id: message.id,
+          applicationId,
           content: message.content,
           senderId: userId,
-          createdAt: message.createdAt,
+          createdAt: message.createdAt ? new Date(message.createdAt).toISOString() : new Date().toISOString(),
         },
       };
     } catch (error) {
       if (error instanceof WsException) {
         throw error;
       }
-
-      throw new WsException('Failed to send message');
+      return {
+        success: false,
+        error: error instanceof Error ? error.message : 'Failed to send message',
+      };
     }
   }
 
   @OnEvent('new.message')
   emitNewMessage(
     applicationId: string,
-    messages: {
+    message: {
       id: string;
       content: string;
       senderId: string;
       createdAt: Date;
     },
   ) {
+    if (!this.server) return;
     const room = this.createRoom(applicationId);
-    this.server.to(room).emit('new-message', messages);
+    const payload = {
+      id: message.id,
+      applicationId,
+      content: message.content,
+      senderId: message.senderId,
+      createdAt: message.createdAt ? new Date(message.createdAt).toISOString() : new Date().toISOString(),
+    };
+    this.server.to(room).emit('new-message', payload);
   }
 }

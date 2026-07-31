@@ -18,6 +18,7 @@ import { CreateRequirementDto } from './dto/create-requirement.dto';
 import { UpdateRequirementDto } from './dto/update-requirement.dto';
 import { BrowseRequirementsResult, RequirementWithScore } from './Interface/requirement.interface';
 import { Application, ApplicationStatus } from 'src/application/entities/application.entity';
+import { ApplicationService } from 'src/application/application.service';
 import { NotificationService } from 'src/notification/notification.service';
 import { NotificationGateway } from 'src/notification/notification.gateway';
 import { User } from 'src/user/entities/user.entity';
@@ -39,6 +40,7 @@ export class RequirementService {
     private readonly applicationRepo: Repository<Application>,
     private readonly notificationService: NotificationService,
     private readonly notificationGateway: NotificationGateway,
+    private readonly applicationService: ApplicationService,
   ) {}
 
 
@@ -228,6 +230,16 @@ export class RequirementService {
           )
         : 0,
     };
+  }
+
+  async getApplicationsForRequirement(
+    requirementId: string,
+    userId: string,
+  ): Promise<Application[]> {
+    return this.applicationService.getApplicationsForRequirement(
+      requirementId,
+      userId,
+    );
   }
 
    async apply(requirementId: string, userId: string): Promise<Application> {

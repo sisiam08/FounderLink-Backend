@@ -5,10 +5,12 @@ import { CofounderRequirement } from '../requirement/entities/cofounder-requirem
 import { Profile } from '../profile/entities/profile.entity';
 import { ApplicationService } from './application.service';
 import { ApplicationController } from './application.controller';
+import { NotificationModule } from '../notification/notification.module';
 
 @Module({
   imports: [
     TypeOrmModule.forFeature([Application, CofounderRequirement, Profile]),
+    NotificationModule,
   ],
   controllers: [ApplicationController],
   providers: [ApplicationService],

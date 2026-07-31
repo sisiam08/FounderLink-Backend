@@ -121,6 +121,16 @@ export class SessionService {
     );
   }
 
+  async getSessionById(sessionId: string): Promise<UserSession> {
+    const session = await this.sessionRepo.findOne({
+      where: { id: sessionId },
+    });
+    if (!session) {
+      throw new UnauthorizedException('Session not found');
+    }
+    return session;
+  }
+
   async getActiveSessions(userId: string): Promise<UserSession[]> {
     return await this.sessionRepo.find({
       where: {
