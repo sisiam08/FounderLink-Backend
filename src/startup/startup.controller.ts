@@ -97,7 +97,7 @@ export class StartupController {
     );
   }
 
-  // for admin
+  
 @Roles(SystemRole.SUPER_ADMIN,SystemRole.ADMIN)
 @Get('all')
   async listStartups(

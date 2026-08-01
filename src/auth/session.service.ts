@@ -142,4 +142,11 @@ export class SessionService {
       },
     });
   }
+
+  async getUserSessions(userId: string): Promise<UserSession[]> {
+    return this.sessionRepo.find({
+      where: { user: { id: userId }, revoked: false },
+      order: { createdAt: 'DESC' },
+    });
+  }
 }

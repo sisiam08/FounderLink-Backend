@@ -38,7 +38,7 @@ export class UploadService {
       throw new NotFoundException('Profile not found');
     }
 
-    // Delete previous photo if it exists
+    
     if (profile.photoUrl) {
       const oldPath = path.join(process.cwd(), profile.photoUrl);
       if (fs.existsSync(oldPath)) {

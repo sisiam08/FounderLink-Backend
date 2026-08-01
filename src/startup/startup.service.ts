@@ -172,7 +172,7 @@ async deleteStartup(
 
 
 
-// for admin
+
 
 async listStartups(status?: string, search?: string, page = 1, limit = 20) {
     const qb = this.startupRepo
