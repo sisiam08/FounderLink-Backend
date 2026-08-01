@@ -3,7 +3,6 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
-  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
@@ -31,8 +30,6 @@ import { UserSession } from './entities/user-session.entity';
 
 @Injectable()
 export class AuthService {
-  private readonly logger = new Logger(AuthService.name);
-
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
@@ -111,12 +108,7 @@ export class AuthService {
 
       this.mailService
         .sendOTPMail(email, code, OtpPurpose.SIGNUP)
-        .catch((error) => {
-          this.logger.error(
-            `Failed to send signup OTP to ${email}: ${error.message}`,
-            error.stack,
-          );
-        });
+        .catch(() => undefined);
 
       return {
         message: 'OTP sent to your email. Verify to complete signup.',
@@ -264,12 +256,7 @@ export class AuthService {
 
       this.mailService
         .sendOTPMail(user.email, code, OtpPurpose.PASSWORD_RESET)
-        .catch((error) => {
-          this.logger.error(
-            `Failed to send password reset OTP to ${user.email}: ${error.message}`,
-            error.stack,
-          );
-        });
+        .catch(() => undefined);
 
       return {
         message:

@@ -2,7 +2,6 @@ import {
   HttpException,
   Injectable,
   InternalServerErrorException,
-  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import sgMail from '@sendgrid/mail';
@@ -15,7 +14,6 @@ interface SendGridError {
 
 @Injectable()
 export class MailService {
-  private readonly logger = new Logger(MailService.name);
   private initialized = false;
 
   constructor(private readonly configService: ConfigService) {}
@@ -81,43 +79,9 @@ export class MailService {
       if (error instanceof HttpException) throw error;
       const err = error as SendGridError;
       const message = this.extractError(err);
-      this.logger.error(
-        `Mail send failed for ${to}: ${message}`,
-        error instanceof Error ? error.stack : undefined,
-      );
       throw new InternalServerErrorException(
         `Failed to send OTP email: ${message}`,
       );
     }
-  }
-
-  async diagnoseSMTP(to?: string): Promise<Record<string, unknown>> {
-    const result: Record<string, unknown> = { provider: 'sendgrid' };
-    result.config = {
-      fromEmail: this.configService.getOrThrow<string>('MAIL_FROM_EMAIL'),
-      apiKeySet: Boolean(this.configService.get<string>('SENDGRID_API_KEY')),
-    };
-
-    try {
-      if (!to) {
-        result.send = 'SKIPPED';
-        result.sendMessage = 'Pass ?to=you@email.com to send a test email';
-        return result;
-      }
-      this.initSendGrid();
-      await sgMail.send({
-        from: this.configService.getOrThrow<string>('MAIL_FROM_EMAIL'),
-        to,
-        subject: 'FounderLink SendGrid diagnostic test',
-        text: 'If you received this, SendGrid works from this environment.',
-      });
-      result.send = 'OK';
-    } catch (error) {
-      const err = error as SendGridError;
-      result.send = 'FAILED';
-      result.sendMessage = this.extractError(err);
-    }
-
-    return result;
   }
 }
