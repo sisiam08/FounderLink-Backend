@@ -2,6 +2,7 @@ import {
   HttpException,
   Injectable,
   InternalServerErrorException,
+  Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import nodemailer from 'nodemailer';
@@ -10,6 +11,7 @@ import { OtpPurpose } from '../auth/entities/otp.entity';
 
 @Injectable()
 export class MailService {
+  private readonly logger = new Logger(MailService.name);
   private transporter: Transporter | null = null;
 
   constructor(private readonly configService: ConfigService) {}
@@ -79,7 +81,61 @@ export class MailService {
       });
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Failed to send OTP email');
+      const err = error as { message?: string };
+      this.logger.error(
+        `SMTP send failed for ${to}: ${err.message}`,
+        error instanceof Error ? error.stack : undefined,
+      );
+      throw new InternalServerErrorException(
+        `Failed to send OTP email: ${err.message}`,
+      );
     }
+  }
+
+  async diagnoseSMTP(to?: string): Promise<Record<string, unknown>> {
+    const config = {
+      host: this.configService.getOrThrow<string>('SMTP_HOST'),
+      port: Number(this.configService.getOrThrow<string>('SMTP_PORT')),
+      secure: this.configService.getOrThrow<string>('SMTP_SECURE') === 'true',
+      user: this.configService.getOrThrow<string>('SMTP_USER'),
+      passIsSet: Boolean(this.configService.getOrThrow<string>('SMTP_PASS')),
+      fromEmail: this.configService.getOrThrow<string>('MAIL_FROM_EMAIL'),
+    };
+
+    const result: Record<string, unknown> = { config };
+
+    try {
+      const transporter = this.getTransporter();
+      await transporter.verify();
+      result.verify = 'OK';
+      result.verifyMessage =
+        'SMTP authentication succeeded with the loaded config';
+    } catch (error) {
+      const err = error as { message?: string; response?: unknown };
+      result.verify = 'FAILED';
+      result.verifyMessage = err.message;
+      if (err.response) result.verifyResponse = err.response;
+      return result;
+    }
+
+    if (to) {
+      try {
+        const info = await this.getTransporter().sendMail({
+          from: `${config.fromEmail} <${config.fromEmail}>`,
+          to,
+          subject: 'FounderLink SMTP diagnostic test',
+          text: 'If you received this, SMTP works from this environment.',
+        });
+        result.send = 'OK';
+        result.messageId = info.messageId;
+      } catch (error) {
+        const err = error as { message?: string; response?: unknown };
+        result.send = 'FAILED';
+        result.sendMessage = err.message;
+        if (err.response) result.sendResponse = err.response;
+      }
+    }
+
+    return result;
   }
 }

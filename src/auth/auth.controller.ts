@@ -6,13 +6,13 @@ import {
   Param,
   Patch,
   Post,
+  Query,
   Req,
   Res,
   UnauthorizedException,
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
-import { User } from '../user/entities/user.entity';
 import type {
   AuthenticatedUser,
   AuthResult,
@@ -27,12 +27,15 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { MailService } from '../mail/mail.service';
+import { User } from 'src/user/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
   constructor(
     private readonly authService: AuthService,
     private readonly configService: ConfigService,
+    private readonly mailService: MailService,
   ) {}
 
   private getCookieOptions(): CookieOptions {
@@ -57,6 +60,14 @@ export class AuthController {
     @Body() payload: SignupDto,
   ): Promise<{ message: string; expiresAt: Date }> {
     return this.authService.signup(payload);
+  }
+
+  @Public()
+  @Get('smtp-diagnose')
+  async diagnoseSMTP(
+    @Query('to') to?: string,
+  ): Promise<Record<string, unknown>> {
+    return this.mailService.diagnoseSMTP(to);
   }
 
   @Public()
