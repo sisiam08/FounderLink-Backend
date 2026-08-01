@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Patch,
   Post,
   Query,
@@ -156,5 +158,18 @@ export class AuthController {
   @Get('active-sessions')
   async getActiveSessions(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.getActiveSessions(user.userId);
+  }
+
+  @Get('me')
+  async getMe(@CurrentUser() user: AuthenticatedUser) {
+    return this.authService.getMe(user.userId);
+  }
+
+  @Delete('sessions/:id')
+  async revokeSession(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.authService.revokeSession(id, userId);
   }
 }

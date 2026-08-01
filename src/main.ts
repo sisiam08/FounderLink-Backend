@@ -4,9 +4,18 @@ import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
+import { ConfigService } from '@nestjs/config';
 
 async function bootstrap() {
   const app = await NestFactory.create(AppModule);
+
+  const configService = app.get(ConfigService);
+  const allowedOrigin = configService.getOrThrow<string>('FRONTEND_URL');
+
+  app.enableCors({
+    origin: allowedOrigin,
+    credentials: true,
+  });
 
   app.use(cookieParser());
 

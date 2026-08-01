@@ -2,6 +2,8 @@ import {
   Injectable,
   NotFoundException,
   ForbiddenException,
+  BadRequestException,
+  ConflictException,
 } from '@nestjs/common';
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
@@ -11,10 +13,16 @@ import {
 } from './entities/cofounder-requirement.entity';
 import { StartupIdea } from '../startup/entities/startup-idea.entity';
 import { Profile } from '../profile/entities/profile.entity';
-import { CompatibilityService } from './compatibility.service';
+import { CompatibilityService, computeCompatibility } from './compatibility.service';
 import { CreateRequirementDto } from './dto/create-requirement.dto';
 import { UpdateRequirementDto } from './dto/update-requirement.dto';
 import { BrowseRequirementsResult, RequirementWithScore } from './Interface/requirement.interface';
+import { Application, ApplicationStatus } from 'src/application/entities/application.entity';
+import { ApplicationService } from 'src/application/application.service';
+import { NotificationService } from 'src/notification/notification.service';
+import { NotificationGateway } from 'src/notification/notification.gateway';
+import { User } from 'src/user/entities/user.entity';
+import { NotificationType } from 'src/notification/entities/notification.entity';
 
 
 
@@ -28,8 +36,44 @@ export class RequirementService {
     @InjectRepository(Profile)
     private readonly profileRepo: Repository<Profile>,
     private readonly compatibilityService: CompatibilityService,
+    @InjectRepository(Application)
+    private readonly applicationRepo: Repository<Application>,
+    private readonly notificationService: NotificationService,
+    private readonly notificationGateway: NotificationGateway,
+    private readonly applicationService: ApplicationService,
   ) {}
 
+
+  private assertOwnership(
+    requirement: CofounderRequirement,
+    userId: string,
+  ): void {
+    if (requirement.startupIdea.owner.id !== userId) {
+      throw new ForbiddenException(
+        'You do not own the startup idea this requirement belongs to',
+      );
+    }
+  }
+
+  private async getPendingCount(userId: string): Promise<number> {
+    return this.applicationRepo.count({
+      where: {
+        requirement: { startupIdea: { owner: { id: userId } } },
+        status: ApplicationStatus.PENDING,
+      },
+    });
+  }
+
+    async getRequirementWithOwner(id: string): Promise<CofounderRequirement> {
+    const requirement = await this.requirementRepo.findOne({
+      where: { id },
+      relations: { startupIdea: { owner: true } },
+    });
+    if (!requirement) {
+      throw new NotFoundException('Requirement not found');
+    }
+    return requirement;
+  }
 
   
 
@@ -188,26 +232,76 @@ export class RequirementService {
     };
   }
 
-  async getRequirementWithOwner(id: string): Promise<CofounderRequirement> {
+  async getApplicationsForRequirement(
+    requirementId: string,
+    userId: string,
+  ): Promise<Application[]> {
+    return this.applicationService.getApplicationsForRequirement(
+      requirementId,
+      userId,
+    );
+  }
+
+   async apply(requirementId: string, userId: string): Promise<Application> {
     const requirement = await this.requirementRepo.findOne({
-      where: { id },
+      where: { id: requirementId },
       relations: { startupIdea: { owner: true } },
     });
     if (!requirement) {
       throw new NotFoundException('Requirement not found');
     }
-    return requirement;
-  }
+    if (requirement.status !== RequirementStatus.OPEN) {
+      throw new BadRequestException('This requirement is closed');
+    }
 
-  private assertOwnership(
-    requirement: CofounderRequirement,
-    userId: string,
-  ): void {
-    if (requirement.startupIdea.owner.id !== userId) {
-      throw new ForbiddenException(
-        'You do not own the startup idea this requirement belongs to',
+    if (requirement.startupIdea.owner.id === userId) {
+      throw new BadRequestException('You cannot apply to your own requirement');
+    }
+
+    const existing = await this.applicationRepo.findOne({
+      where: { requirement: { id: requirementId }, candidate: { id: userId } },
+    });
+    if (existing) {
+      throw new ConflictException(
+        'You have already applied to this requirement',
       );
     }
+
+    const profile = await this.profileRepo.findOne({
+      where: { user: { id: userId } },
+    });
+
+    const score = profile
+      ? computeCompatibility(profile, requirement, requirement.startupIdea)
+      : 0;
+
+    const application = this.applicationRepo.create({
+      requirement: requirement,
+      candidate: { id: userId } as User,
+      compatibilityScore: score,
+    });
+
+    const saved = await this.applicationRepo.save(application);
+
+    await this.notificationService.sendNotification(
+      requirement.startupIdea.owner.id,
+      NotificationType.NEW_APPLICATION,
+      {
+        applicationId: saved.id,
+        requirementId,
+        candidateId: userId,
+      },
+    );
+
+    const pendingCount = await this.getPendingCount(
+      requirement.startupIdea.owner.id,
+    );
+    this.notificationGateway.emitPendingCount(
+      requirement.startupIdea.owner.id,
+      pendingCount,
+    );
+
+    return saved;
   }
 
 

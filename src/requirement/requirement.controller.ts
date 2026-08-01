@@ -28,6 +28,11 @@ export class RequirementController {
     return this.requirementService.updateRequirement(id, userId, dto);
   }
 
+  @Post(':id/apply')
+  async apply(@Param('id') id: string,@CurrentUser('userId') userId: string,) {
+    return this.requirementService.apply(id, userId);
+  }
+
   @Patch(':id/close')
   async close(@Param('id') id: string, @CurrentUser('userId') userId: string) {
     return this.requirementService.closeRequirement(id, userId);
@@ -57,7 +62,15 @@ export class RequirementController {
     return this.requirementService.getRequirementById(id, userId);
   }
 
-  @Get('requirements')
+  @Get(':id/applications')
+  async getApplications(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.requirementService.getApplicationsForRequirement(id, userId);
+  }
+
+  @Get('requirements-list')
   @Roles(SystemRole.ADMIN, SystemRole.SUPER_ADMIN)
   async listRequirements(@Query('status') status?: string,@Query('role') role?: string,@Query('page') page?: string,@Query('limit') limit?: string) {
     return this.requirementService.listRequirements(
@@ -67,6 +80,7 @@ export class RequirementController {
       limit ? parseInt(limit, 10) : 20,
     );
   }
+
 
   @Patch('requirements/:id/close')
   @Roles(SystemRole.ADMIN, SystemRole.SUPER_ADMIN)

@@ -8,7 +8,6 @@ import {
   PrimaryGeneratedColumn,
   UpdateDateColumn,
 } from 'typeorm';
-import { CofounderRequirement } from '../../requirement/entities/cofounder-requirement.entity';
 import { User } from '../../user/entities/user.entity';
 
 export enum StartupStage {

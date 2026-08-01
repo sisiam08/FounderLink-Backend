@@ -13,11 +13,15 @@ import { Repository } from 'typeorm';
 import { Notification } from './entities/notification.entity';
 
 @WebSocketGateway({
-  namespace: '/notification',
+  cors: {
+    origin: process.env.FRONTEND_URL ?? 'http://localhost:3000',
+    credentials: true,
+  },
+  namespace: '/notifications',
 })
 export class NotificationGateway implements OnGatewayConnection {
   @WebSocketServer()
-  server: Server;
+  server!: Server;
   constructor(
     private readonly configService: ConfigService,
     private readonly jwtService: JwtService,
@@ -62,23 +66,28 @@ export class NotificationGateway implements OnGatewayConnection {
       client.data.userId = user.id;
       const room = this.createRoom(user.id);
       void client.join(room);
-    } catch (error) {
-      void client.disconnect();
-      throw error;
+    } catch {
+      client.emit('error', {
+        message: 'Authentication failed',
+      });
+      client.disconnect();
     }
   }
 
   emitNotification(userId: string, notification: Notification): void {
+    if (!this.server) return;
     const room = this.createRoom(userId);
     this.server.to(room).emit('new-notification', notification);
   }
 
   emitUnreadCount(userId: string, count: number): void {
+    if (!this.server) return;
     const room = this.createRoom(userId);
     this.server.to(room).emit('unread-count', count);
   }
 
   emitPendingCount(userId: string, count: number): void {
+    if (!this.server) return;
     const room = this.createRoom(userId);
     this.server.to(room).emit('pending-count', count);
   }

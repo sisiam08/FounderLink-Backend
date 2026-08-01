@@ -35,7 +35,10 @@ export class UserSession {
   @Column({ name: 'last_active_at', type: 'timestamptz', nullable: true })
   lastActiveAt: Date | null;
 
-  @Column({ default: false })
+  @Column({
+    type: 'boolean',
+    default: false,
+  })
   revoked: boolean;
 
   @CreateDateColumn({ name: 'created_at' })

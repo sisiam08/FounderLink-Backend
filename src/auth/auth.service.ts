@@ -3,9 +3,11 @@ import {
   ConflictException,
   ForbiddenException,
   Injectable,
+  Logger,
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { SystemRole } from '../user/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserStatus } from '../user/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -29,6 +31,8 @@ import { UserSession } from './entities/user-session.entity';
 
 @Injectable()
 export class AuthService {
+  private readonly logger = new Logger(AuthService.name);
+
   constructor(
     @InjectRepository(User)
     private readonly userRepo: Repository<User>,
@@ -67,6 +71,9 @@ export class AuthService {
           id: user.id,
           fullName: user.fullName,
           email: user.email,
+          systemRole: user.systemRole,
+          status: user.status,
+          createdAt: user.createdAt,
         },
         accessToken,
         refreshToken,
@@ -102,7 +109,14 @@ export class AuthService {
         { fullName, passwordHash },
       );
 
-      await this.mailService.sendOTPMail(email, code, OtpPurpose.SIGNUP);
+      this.mailService
+        .sendOTPMail(email, code, OtpPurpose.SIGNUP)
+        .catch((error) => {
+          this.logger.error(
+            `Failed to send signup OTP to ${email}: ${error.message}`,
+            error.stack,
+          );
+        });
 
       return {
         message: 'OTP sent to your email. Verify to complete signup.',
@@ -170,6 +184,8 @@ export class AuthService {
           email: true,
           password: true,
           status: true,
+          systemRole: true,
+          createdAt: true,
         },
       });
       if (!user || !user.password) {
@@ -246,11 +262,14 @@ export class AuthService {
         { userId: user.id },
       );
 
-      await this.mailService.sendOTPMail(
-        user.email,
-        code,
-        OtpPurpose.PASSWORD_RESET,
-      );
+      this.mailService
+        .sendOTPMail(user.email, code, OtpPurpose.PASSWORD_RESET)
+        .catch((error) => {
+          this.logger.error(
+            `Failed to send password reset OTP to ${user.email}: ${error.message}`,
+            error.stack,
+          );
+        });
 
       return {
         message:
@@ -390,6 +409,26 @@ export class AuthService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async getMe(userId: string) {
+    const user = await this.userRepo
+      .createQueryBuilder('user')
+      .addSelect('user.suspendedReason')
+      .where('user.id = :id', { id: userId })
+      .getOne();
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  async revokeSession(sessionId: string, userId: string): Promise<boolean> {
+    const session = await this.sessionService.getSessionById(sessionId);
+    if (session.userId !== userId) {
+      throw new ForbiddenException('You can only revoke your own sessions');
+    }
+    return this.sessionService.revokeSession(sessionId);
   }
 
   async getActiveSessions(userId: string): Promise<Partial<UserSession>[]> {

@@ -28,7 +28,7 @@ export class AdminStatsController {
 
   @Get('requirements') 
   async getRequirementStats() {
-    
+
     return this.statsService.getRequirementStats();
   }
 }
