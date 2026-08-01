@@ -10,7 +10,6 @@ import {
 } from 'typeorm';
 import { CofounderRequirement } from '../../requirement/entities/cofounder-requirement.entity';
 import { User } from '../../user/entities/user.entity';
-import { CofounderRequirement } from '../../requirement/entities/cofounder-requirement.entity';
 
 export enum StartupStage {
   IDEA ='idea',

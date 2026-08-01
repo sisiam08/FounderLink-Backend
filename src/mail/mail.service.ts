@@ -5,43 +5,34 @@ import {
   Logger,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import nodemailer from 'nodemailer';
-import type { Transporter } from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import { OtpPurpose } from '../auth/entities/otp.entity';
+
+interface SendGridError {
+  message?: string;
+  response?: { body?: { errors?: Array<{ message?: string }> } };
+}
 
 @Injectable()
 export class MailService {
   private readonly logger = new Logger(MailService.name);
-  private transporter: Transporter | null = null;
+  private initialized = false;
 
   constructor(private readonly configService: ConfigService) {}
 
-  private getTransporter(): Transporter {
-    if (this.transporter) return this.transporter;
-
-    this.transporter = nodemailer.createTransport({
-      host: this.configService.getOrThrow<string>('SMTP_HOST'),
-      port: Number(this.configService.getOrThrow<string>('SMTP_PORT')),
-      secure: Boolean(this.configService.getOrThrow<string>('SMTP_SECURE')),
-      auth: {
-        user: this.configService.getOrThrow<string>('SMTP_USER'),
-        pass: this.configService.getOrThrow<string>('SMTP_PASS'),
-      },
-    });
-
-    return this.transporter;
+  private initSendGrid(): void {
+    if (this.initialized) return;
+    sgMail.setApiKey(
+      this.configService.getOrThrow<string>('SENDGRID_API_KEY'),
+    );
+    this.initialized = true;
   }
 
-  async sendOTPMail(
-    to: string,
-    code: string,
-    purpose: OtpPurpose,
-  ): Promise<void> {
+  private buildMail(to: string, code: string, purpose: OtpPurpose) {
     const fromName = this.configService.getOrThrow<string>('MAIL_FROM_NAME');
     const fromEmail = this.configService.getOrThrow<string>('MAIL_FROM_EMAIL');
 
     const expiry = this.configService.getOrThrow<string>('OTP_EXPIRES_IN');
-
     const expiryInMin = parseInt(expiry, 10);
 
     const subject =
@@ -67,70 +58,64 @@ export class MailService {
       </div>
     `;
 
+    return { from: `${fromName} <${fromEmail}>`, to, subject, text, html };
+  }
+
+  private extractError(error: SendGridError): string {
+    const errors = error.response?.body?.errors;
+    if (errors && errors.length > 0) {
+      return errors.map((e) => e.message).filter(Boolean).join(', ');
+    }
+    return error.message || String(error);
+  }
+
+  async sendOTPMail(
+    to: string,
+    code: string,
+    purpose: OtpPurpose,
+  ): Promise<void> {
     try {
-      const transporter = this.getTransporter();
-      await transporter.sendMail({
-        from: `${fromName} <${fromEmail}>`,
-        to,
-        subject,
-        text,
-        html,
-      });
+      this.initSendGrid();
+      await sgMail.send(this.buildMail(to, code, purpose));
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      const err = error as { message?: string };
+      const err = error as SendGridError;
+      const message = this.extractError(err);
       this.logger.error(
-        `SMTP send failed for ${to}: ${err.message}`,
+        `Mail send failed for ${to}: ${message}`,
         error instanceof Error ? error.stack : undefined,
       );
       throw new InternalServerErrorException(
-        `Failed to send OTP email: ${err.message}`,
+        `Failed to send OTP email: ${message}`,
       );
     }
   }
 
   async diagnoseSMTP(to?: string): Promise<Record<string, unknown>> {
-    const config = {
-      host: this.configService.getOrThrow<string>('SMTP_HOST'),
-      port: Number(this.configService.getOrThrow<string>('SMTP_PORT')),
-      secure: this.configService.getOrThrow<string>('SMTP_SECURE') === 'true',
-      user: this.configService.getOrThrow<string>('SMTP_USER'),
-      passIsSet: Boolean(this.configService.getOrThrow<string>('SMTP_PASS')),
+    const result: Record<string, unknown> = { provider: 'sendgrid' };
+    result.config = {
       fromEmail: this.configService.getOrThrow<string>('MAIL_FROM_EMAIL'),
+      apiKeySet: Boolean(this.configService.get<string>('SENDGRID_API_KEY')),
     };
 
-    const result: Record<string, unknown> = { config };
-
     try {
-      const transporter = this.getTransporter();
-      await transporter.verify();
-      result.verify = 'OK';
-      result.verifyMessage =
-        'SMTP authentication succeeded with the loaded config';
-    } catch (error) {
-      const err = error as { message?: string; response?: unknown };
-      result.verify = 'FAILED';
-      result.verifyMessage = err.message;
-      if (err.response) result.verifyResponse = err.response;
-      return result;
-    }
-
-    if (to) {
-      try {
-        const info = await this.getTransporter().sendMail({
-          from: `${config.fromEmail} <${config.fromEmail}>`,
-          to,
-          subject: 'FounderLink SMTP diagnostic test',
-          text: 'If you received this, SMTP works from this environment.',
-        });
-        result.send = 'OK';
-        result.messageId = info.messageId;
-      } catch (error) {
-        const err = error as { message?: string; response?: unknown };
-        result.send = 'FAILED';
-        result.sendMessage = err.message;
-        if (err.response) result.sendResponse = err.response;
+      if (!to) {
+        result.send = 'SKIPPED';
+        result.sendMessage = 'Pass ?to=you@email.com to send a test email';
+        return result;
       }
+      this.initSendGrid();
+      await sgMail.send({
+        from: this.configService.getOrThrow<string>('MAIL_FROM_EMAIL'),
+        to,
+        subject: 'FounderLink SendGrid diagnostic test',
+        text: 'If you received this, SendGrid works from this environment.',
+      });
+      result.send = 'OK';
+    } catch (error) {
+      const err = error as SendGridError;
+      result.send = 'FAILED';
+      result.sendMessage = this.extractError(err);
     }
 
     return result;

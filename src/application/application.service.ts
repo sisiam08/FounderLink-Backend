@@ -87,7 +87,7 @@ export class ApplicationService {
     return this.applicationRepo.find({
       where: { candidate: { id: userId } },
       relations: { requirement: { startupIdea: true } },
-      order: { createdAt: 'DESC' },//নতুন ডাটাটি সবার আগে/উপরে থাকবে, এবং পুরোনো ডাটাগুলো নিচে থাকবে
+      order: { createdAt: 'DESC' },
     });
   }
   async getApplicationsForRequirement(
