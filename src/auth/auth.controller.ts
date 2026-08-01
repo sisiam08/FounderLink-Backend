@@ -11,7 +11,6 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
-import { User } from 'src/user/entities/user.entity';
 import type {
   AuthenticatedUser,
   AuthResult,
@@ -20,13 +19,14 @@ import { LoginDto } from './dto/login.dto';
 import type { CookieOptions, Request, Response } from 'express';
 import { ConfigService } from '@nestjs/config';
 import ms from 'ms';
-import { Public } from 'src/common/decorators/public.decorator';
-import { CurrentUser } from 'src/common/decorators/current-user.decorator';
+import { Public } from '../common/decorators/public.decorator';
+import { CurrentUser } from '../common/decorators/current-user.decorator';
 import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { MailService } from '../mail/mail.service';
+import { User } from 'src/user/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -56,7 +56,7 @@ export class AuthController {
   @Post('signup')
   async signup(
     @Body() payload: SignupDto,
-  ): Promise<{message: string, expiresAt: Date}> {
+  ): Promise<{ message: string; expiresAt: Date }> {
     return this.authService.signup(payload);
   }
 
@@ -70,7 +70,7 @@ export class AuthController {
 
   @Public()
   @Post('signup/verify-otp')
-  async verifySignupOTP(@Body() payload: VerifyOtpDto): Promise<Partial<User>>{
+  async verifySignupOTP(@Body() payload: VerifyOtpDto): Promise<Partial<User>> {
     return this.authService.verifySignupOTP(payload);
   }
 
@@ -123,7 +123,7 @@ export class AuthController {
     };
   }
 
- @Public()
+  @Public()
   @Post('forgot-password')
   async forgotPassword(@Body() payload: ForgotPasswordDto) {
     return this.authService.forgotPassword(payload);
@@ -142,8 +142,15 @@ export class AuthController {
   }
 
   @Patch('change-password')
-  async changePassword(@CurrentUser() user: AuthenticatedUser, @Body() payload: ChangePasswordDto) {
-    return this.authService.changePassword(user.userId, user.sessionId, payload);
+  async changePassword(
+    @CurrentUser() user: AuthenticatedUser,
+    @Body() payload: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(
+      user.userId,
+      user.sessionId,
+      payload,
+    );
   }
 
   @Get('active-sessions')

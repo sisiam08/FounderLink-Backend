@@ -7,7 +7,7 @@ import {
 import { ConfigService } from '@nestjs/config';
 import nodemailer from 'nodemailer';
 import type { Transporter } from 'nodemailer';
-import { OtpPurpose } from 'src/auth/entities/otp.entity';
+import { OtpPurpose } from '../auth/entities/otp.entity';
 
 @Injectable()
 export class MailService {
@@ -21,8 +21,8 @@ export class MailService {
 
     this.transporter = nodemailer.createTransport({
       host: this.configService.getOrThrow<string>('SMTP_HOST'),
-      port: Number(this.configService.getOrThrow<number>('SMTP_PORT')),
-      secure: Boolean(this.configService.getOrThrow<boolean>('SMTP_SECURE')),
+      port: Number(this.configService.getOrThrow<string>('SMTP_PORT')),
+      secure: Boolean(this.configService.getOrThrow<string>('SMTP_SECURE')),
       auth: {
         user: this.configService.getOrThrow<string>('SMTP_USER'),
         pass: this.configService.getOrThrow<string>('SMTP_PASS'),
