@@ -398,12 +398,18 @@ export class AuthService {
     }
   }
 
-  async getMe(userId: string) {
-    const user = await this.userRepo
-      .createQueryBuilder('user')
-      .addSelect('user.suspendedReason')
-      .where('user.id = :id', { id: userId })
-      .getOne();
+  async getMe(userId: string): Promise<Partial<User>> {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        systemRole: true,
+        status: true,
+        createdAt: true,
+      },
+    });
     if (!user) {
       throw new NotFoundException('User not found');
     }

@@ -150,7 +150,7 @@ export class AuthController {
   }
 
   @Get('me')
-  async getMe(@CurrentUser() user: AuthenticatedUser) {
+  async getMe(@CurrentUser() user: AuthenticatedUser): Promise<Partial<User>> {
     return this.authService.getMe(user.userId);
   }
 
