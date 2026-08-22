@@ -87,7 +87,7 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
-  async refresh(@Req() req: Request): Promise<{ accessToken: string }> {
+  async refresh(@Req() req: Request): Promise<{ user: Partial<User>; accessToken: string }> {
     const refreshToken = req.cookies.refreshToken as string;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh Token Missing');

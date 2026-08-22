@@ -199,18 +199,27 @@ export class AuthService {
 
   async rotateRefreshToken(
     refreshToken: string,
-  ): Promise<{ accessToken: string }> {
+  ): Promise<{ user: Partial<User>; accessToken: string }> {
     try {
       const session = await this.sessionService.validateSession(refreshToken);
       if (session.user) {
         this.assertUserActive(session.user.status);
       }
 
+      const user = {
+        id: session.user.id,
+        fullName: session.user.fullName,
+        email: session.user.email,
+        systemRole: session.user.systemRole,
+        status: session.user.status,
+        createdAt: session.user.createdAt,
+      };
+
       const accessToken = this.jwtService.sign({
         userId: session.user.id,
         sessionId: session.id,
       });
-      return { accessToken };
+      return { user, accessToken };
     } catch (error) {
       throw error;
     }
