@@ -7,7 +7,7 @@ import {
 import { InjectRepository } from '@nestjs/typeorm';
 import { Repository } from 'typeorm';
 import { CofounderRequirement } from '../requirement/entities/cofounder-requirement.entity';
-import { User } from '../user/entities/user.entity';
+import { SystemRole, User } from '../user/entities/user.entity';
 import { CreateRequirementDto } from '../requirement/dto/create-requirement.dto';
 import { CreateStartupDto } from './dto/create-startup.dto';
 import { UpdateStartupDto } from './dto/update-startup.dto';
@@ -85,7 +85,11 @@ return await this.startupRepo.find({
  private checkOwner(
     startup: StartupIdea,
     userId: string,
+    systemRole?: SystemRole,
   ): void {
+    if (systemRole === SystemRole.ADMIN || systemRole === SystemRole.SUPER_ADMIN) {
+      return;
+    }
     if (startup.owner.id !== userId) {
       throw new ForbiddenException(
         'You can only modify your own startup idea',
@@ -112,10 +116,11 @@ async updateStartup(
  async closeStartup(
     id: string,
     userId: string,
+    systemRole?: SystemRole,
   ): Promise<StartupIdea> {
     const startup = await this.getStartupById(id);
 
-    this.checkOwner(startup, userId);
+    this.checkOwner(startup, userId, systemRole);
 
     startup.status = StartupStatus.CLOSED;
 
@@ -125,10 +130,11 @@ async updateStartup(
 async deleteStartup(
     id: string,
     userId: string,
+    systemRole?: SystemRole,
   ): Promise<{ message: string }> {
     const startup = await this.getStartupById(id);
 
-    this.checkOwner(startup, userId);
+    this.checkOwner(startup, userId, systemRole);
 
     await this.startupRepo.remove(startup);
 
@@ -166,7 +172,7 @@ async deleteStartup(
 
 
 
-// for admin
+
 
 async listStartups(status?: string, search?: string, page = 1, limit = 20) {
     const qb = this.startupRepo

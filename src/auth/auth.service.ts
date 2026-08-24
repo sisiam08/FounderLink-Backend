@@ -6,6 +6,7 @@ import {
   NotFoundException,
   UnauthorizedException,
 } from '@nestjs/common';
+import { SystemRole } from '../user/entities/user.entity';
 import { InjectRepository } from '@nestjs/typeorm';
 import { User, UserStatus } from '../user/entities/user.entity';
 import { Repository } from 'typeorm';
@@ -67,6 +68,9 @@ export class AuthService {
           id: user.id,
           fullName: user.fullName,
           email: user.email,
+          systemRole: user.systemRole,
+          status: user.status,
+          createdAt: user.createdAt,
         },
         accessToken,
         refreshToken,
@@ -102,7 +106,9 @@ export class AuthService {
         { fullName, passwordHash },
       );
 
-      await this.mailService.sendOTPMail(email, code, OtpPurpose.SIGNUP);
+      this.mailService
+        .sendOTPMail(email, code, OtpPurpose.SIGNUP)
+        .catch(() => undefined);
 
       return {
         message: 'OTP sent to your email. Verify to complete signup.',
@@ -170,6 +176,8 @@ export class AuthService {
           email: true,
           password: true,
           status: true,
+          systemRole: true,
+          createdAt: true,
         },
       });
       if (!user || !user.password) {
@@ -191,18 +199,27 @@ export class AuthService {
 
   async rotateRefreshToken(
     refreshToken: string,
-  ): Promise<{ accessToken: string }> {
+  ): Promise<{ user: Partial<User>; accessToken: string }> {
     try {
       const session = await this.sessionService.validateSession(refreshToken);
       if (session.user) {
         this.assertUserActive(session.user.status);
       }
 
+      const user = {
+        id: session.user.id,
+        fullName: session.user.fullName,
+        email: session.user.email,
+        systemRole: session.user.systemRole,
+        status: session.user.status,
+        createdAt: session.user.createdAt,
+      };
+
       const accessToken = this.jwtService.sign({
         userId: session.user.id,
         sessionId: session.id,
       });
-      return { accessToken };
+      return { user, accessToken };
     } catch (error) {
       throw error;
     }
@@ -246,11 +263,9 @@ export class AuthService {
         { userId: user.id },
       );
 
-      await this.mailService.sendOTPMail(
-        user.email,
-        code,
-        OtpPurpose.PASSWORD_RESET,
-      );
+      this.mailService
+        .sendOTPMail(user.email, code, OtpPurpose.PASSWORD_RESET)
+        .catch(() => undefined);
 
       return {
         message:
@@ -390,6 +405,32 @@ export class AuthService {
     } catch (error) {
       throw error;
     }
+  }
+
+  async getMe(userId: string): Promise<Partial<User>> {
+    const user = await this.userRepo.findOne({
+      where: { id: userId },
+      select: {
+        id: true,
+        fullName: true,
+        email: true,
+        systemRole: true,
+        status: true,
+        createdAt: true,
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('User not found');
+    }
+    return user;
+  }
+
+  async revokeSession(sessionId: string, userId: string): Promise<boolean> {
+    const session = await this.sessionService.getSessionById(sessionId);
+    if (session.userId !== userId) {
+      throw new ForbiddenException('You can only revoke your own sessions');
+    }
+    return this.sessionService.revokeSession(sessionId);
   }
 
   async getActiveSessions(userId: string): Promise<Partial<UserSession>[]> {

@@ -8,11 +8,18 @@ import { RequirementController } from './requirement.controller';
 import { CompatibilityService } from './compatibility.service';
 import { Application } from 'src/application/entities/application.entity';
 import { NotificationModule } from 'src/notification/notification.module';
+import { ApplicationModule } from 'src/application/application.module';
 
 @Module({
   imports: [
-    TypeOrmModule.forFeature([CofounderRequirement, StartupIdea, Profile, Application]),
+    TypeOrmModule.forFeature([
+      CofounderRequirement,
+      StartupIdea,
+      Profile,
+      Application,
+    ]),
     NotificationModule,
+    ApplicationModule,
   ],
   controllers: [RequirementController],
   providers: [RequirementService, CompatibilityService],

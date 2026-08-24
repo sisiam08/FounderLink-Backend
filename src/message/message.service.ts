@@ -12,7 +12,7 @@ import {
   ApplicationStatus,
 } from '../application/entities/application.entity';
 import { User } from '../user/entities/user.entity';
-import { EventEmitter } from 'events';
+import { EventEmitter2 } from '@nestjs/event-emitter';
 import { NotificationGateway } from '../notification/notification.gateway';
 import { NotificationService } from '../notification/notification.service';
 import { NotificationType } from '../notification/entities/notification.entity';
@@ -26,156 +26,122 @@ export class MessageService {
     private readonly applicationRepo: Repository<Application>,
     private readonly notificationService: NotificationService,
     private readonly notificationGateway: NotificationGateway,
+    private readonly eventEmitter: EventEmitter2,
   ) {}
-
-  private readonly eventEmitter = new EventEmitter();
 
   async assertRoomAccess(
     applicationId: string,
     userId: string,
   ): Promise<Application> {
-    try {
-      const application = await this.applicationRepo
-        .createQueryBuilder('app')
-        .leftJoin('app.candidate', 'candidate')
-        .leftJoin('app.requirement', 'requirement')
-        .leftJoin('requirement.startupIdea', 'startup')
-        .leftJoin('startup.owner', 'owner')
-        .select([
-          'app.id',
-          'app.status',
-          'candidate.id',
-          'requirement.id',
-          'startup.id',
-          'owner.id',
-        ])
-        .where('app.id = :id', { id: applicationId })
-        .getOne();
+    const application = await this.applicationRepo.findOne({
+      where: { id: applicationId },
+      relations: {
+        candidate: true,
+        requirement: { startupIdea: { owner: true } },
+      },
+    });
 
-      if (!application) {
-        throw new NotAcceptableException('Application not found!');
-      }
-      if (application.status !== ApplicationStatus.ACCEPTED) {
-        throw new ForbiddenException(
-          'Messaging is only available for accepted applications',
-        );
-      }
-
-      const ownerId = application.requirement.startupIdea.owner.id;
-      const candidateId = application.candidate.id;
-
-      console.log(userId);
-      console.log(ownerId);
-      console.log(candidateId);
-
-      if (userId !== ownerId && userId !== candidateId) {
-        throw new ForbiddenException(
-          'You are not authorized to access this conversation',
-        );
-      }
-
-      return application;
-    } catch (error) {
-      throw error;
+    if (!application) {
+      throw new NotAcceptableException('Application not found!');
     }
+
+    const ownerId = application.requirement.startupIdea.owner.id;
+    const candidateId = application.candidate.id;
+
+    if (userId !== ownerId && userId !== candidateId) {
+      throw new ForbiddenException(
+        'You are not authorized to access this conversation',
+      );
+    }
+
+    return application;
   }
 
   async getAcceptedApplicationIds(userId: string): Promise<string[]> {
-    const [mine, received] = await Promise.all([
-      this.applicationRepo.find({
-        where: {
-          candidate: { id: userId },
-          status: ApplicationStatus.ACCEPTED,
-        },
-        select: { id: true },
-      }),
-      this.applicationRepo.find({
-        where: {
-          requirement: { startupIdea: { owner: { id: userId } } },
-          status: ApplicationStatus.ACCEPTED,
-        },
-        select: { id: true },
-      }),
-    ]);
+    const applications = await this.applicationRepo
+      .createQueryBuilder('app')
+      .leftJoin('app.requirement', 'requirement')
+      .leftJoin('requirement.startupIdea', 'startup')
+      .leftJoin('startup.owner', 'owner')
+      .leftJoin('app.candidate', 'candidate')
+      .select(['app.id'])
+      .where('(candidate.id = :userId OR owner.id = :userId)', { userId })
+      .getMany();
 
-    return [...mine, ...received].map((a) => a.id);
+    return applications.map((a) => a.id);
   }
 
   async sendMessage(userId: string, payload: SendMessageDto): Promise<Message> {
     const { applicationId, content } = payload;
-    try {
-      const message = this.messageRepo.create({
-        application: { id: applicationId } as Application,
-        sender: { id: userId } as User,
-        content: content,
-        isRead: false,
-      });
-      const savedMessage = await this.messageRepo.save(message);
+    await this.assertRoomAccess(applicationId, userId);
 
-      this.eventEmitter.emit('new.message', {
-        applicationId,
-        message: {
-          id: savedMessage.id,
-          content: savedMessage.content,
-          senderId: savedMessage.sender.id,
-          createdAt: savedMessage.createdAt,
-        },
-      });
+    const message = this.messageRepo.create({
+      application: { id: applicationId } as Application,
+      sender: { id: userId } as User,
+      content: content,
+      isRead: false,
+    });
+    const savedMessage = await this.messageRepo.save(message);
 
-      const application = await this.applicationRepo.findOne({
-        where: { id: applicationId },
-        relations: {
-          requirement: { startupIdea: { owner: { profile: true } } },
-          candidate: { profile: true },
-        },
-      });
+    this.eventEmitter.emit('new.message', applicationId, {
+      id: savedMessage.id,
+      content: savedMessage.content,
+      senderId: userId,
+      createdAt: savedMessage.createdAt,
+    });
 
-      if (!application) {
-        throw new Error('Application not found');
-      }
+    const application = await this.applicationRepo.findOne({
+      where: { id: applicationId },
+      relations: {
+        requirement: { startupIdea: { owner: { profile: true } } },
+        candidate: { profile: true },
+      },
+    });
 
-      const ownerId = application.requirement.startupIdea.owner.id;
-      const candidateId = application.candidate.id;
-
-      const recipientId = ownerId === userId ? candidateId : ownerId;
-      const senderName =
-        ownerId === userId
-          ? application.requirement.startupIdea.owner.fullName
-          : application.candidate.fullName;
-      const senderImage =
-        ownerId === userId
-          ? application.requirement.startupIdea.owner.profile.photoUrl
-          : application.candidate.profile.photoUrl;
-
-      await this.notificationService.sendNotification(
-        recipientId,
-        NotificationType.NEW_MESSAGE,
-        {
-          applicationId: applicationId,
-          messagePreview: content.slice(0, 100),
-          senderId: userId,
-          senderName: senderName,
-          senderImage: senderImage,
-        },
-      );
-
-      const unreadCountSender = await this.getUnreadCount(userId);
-      this.notificationGateway.emitUnreadCount(userId, unreadCountSender);
-
-      const unreadCountRecipient = await this.getUnreadCount(recipientId);
-      this.notificationGateway.emitUnreadCount(
-        recipientId,
-        unreadCountRecipient,
-      );
-
-      return savedMessage;
-    } catch (error) {
-      throw error;
+    if (!application) {
+      throw new Error('Application not found');
     }
+
+    const ownerId = application.requirement.startupIdea.owner.id;
+    const candidateId = application.candidate.id;
+
+    const recipientId = ownerId === userId ? candidateId : ownerId;
+    const senderName =
+      ownerId === userId
+        ? application.requirement.startupIdea.owner.fullName
+        : application.candidate.fullName;
+    const senderImage =
+      ownerId === userId
+        ? application.requirement.startupIdea.owner.profile?.photoUrl ?? null
+        : application.candidate.profile?.photoUrl ?? null;
+
+    await this.notificationService.sendNotification(
+      recipientId,
+      NotificationType.NEW_MESSAGE,
+      {
+        applicationId: applicationId,
+        messagePreview: content.slice(0, 100),
+        senderId: userId,
+        senderName: senderName,
+        senderImage: senderImage,
+      },
+    );
+
+    const unreadCountSender = await this.getUnreadCount(userId);
+    this.notificationGateway.emitUnreadCount(userId, unreadCountSender);
+
+    const unreadCountRecipient = await this.getUnreadCount(recipientId);
+    this.notificationGateway.emitUnreadCount(
+      recipientId,
+      unreadCountRecipient,
+    );
+
+    return savedMessage;
   }
 
   async getMessages(applicationId: string, userId: string): Promise<Message[]> {
     await this.assertRoomAccess(applicationId, userId);
+    await this.markAsRead(applicationId, userId);
     return this.messageRepo.find({
       where: { application: { id: applicationId } },
       relations: { sender: true },
@@ -191,6 +157,8 @@ export class MessageService {
       },
       { isRead: true },
     );
+    const unreadCount = await this.getUnreadCount(userId);
+    this.notificationGateway.emitUnreadCount(userId, unreadCount);
   }
 
   async getUnreadCount(userId: string): Promise<number> {
@@ -231,47 +199,39 @@ export class MessageService {
   }
 
   async getConversations(userId: string) {
+    // No .select() — leftJoinAndSelect must fully hydrate all relations
     const applications = await this.applicationRepo
       .createQueryBuilder('app')
       .leftJoinAndSelect('app.candidate', 'candidate')
+      .leftJoinAndSelect('candidate.profile', 'candidateProfile')
       .leftJoinAndSelect('app.requirement', 'requirement')
       .leftJoinAndSelect('requirement.startupIdea', 'startup')
       .leftJoinAndSelect('startup.owner', 'owner')
-      .where('app.status = :status', { status: ApplicationStatus.ACCEPTED })
-      .andWhere('(candidate.id = :userId OR owner.id = :userId)', { userId })
-      .select([
-        'app.id',
-        'candidate.id',
-        'candidate.fullName',
-        'owner.id',
-        'owner.fullName',
-        'startup.id',
-        'startup.title',
-        'requirement.id',
-      ])
+      .leftJoinAndSelect('owner.profile', 'ownerProfile')
+      .where('(candidate.id = :userId OR owner.id = :userId)', { userId })
       .getMany();
 
-    if (applications.length === 0) return [];
+    if (applications.length === 0) {
+      return [];
+    }
 
     const applicationIds = applications.map((a) => a.id);
 
-    const lastMessages = await this.messageRepo
-      .createQueryBuilder('m')
-      .select(
-        'DISTINCT ON (m.application_id) m.application_id',
-        'applicationId',
-      )
-      .addSelect('m.id', 'id')
-      .addSelect('m.content', 'content')
-      .addSelect('m.sender_id', 'senderId')
-      .addSelect('m.is_read', 'isRead')
-      .addSelect('m.created_at', 'createdAt')
-      .where('m.application_id IN (:...ids)', { ids: applicationIds })
-      .orderBy('m.application_id')
-      .addOrderBy('m.created_at', 'DESC')
-      .getRawMany();
+    const lastMessages = await this.messageRepo.query(
+      `SELECT DISTINCT ON (m.application_id)
+         m.application_id AS "applicationId",
+         m.id AS "id",
+         m.content AS "content",
+         m.sender_id AS "senderId",
+         m.is_read AS "isRead",
+         m.created_at AS "createdAt"
+       FROM messages m
+       WHERE m.application_id = ANY($1)
+       ORDER BY m.application_id, m.created_at DESC`,
+      [applicationIds],
+    );
 
-    const lastMessageMap = new Map<string, (typeof lastMessages)[0]>();
+    const lastMessageMap = new Map<string, any>();
     for (const msg of lastMessages) {
       lastMessageMap.set(msg.applicationId, msg);
     }
@@ -279,37 +239,43 @@ export class MessageService {
     const unreadMap = await this.getUnreadEachApplication(userId);
 
     const conversationList = applications.map((app) => {
-      const isOwner = app.requirement.startupIdea.owner.id === userId;
+      const isOwner = app.requirement?.startupIdea?.owner?.id === userId;
       const otherUser = isOwner
         ? app.candidate
-        : app.requirement.startupIdea.owner;
+        : app.requirement?.startupIdea?.owner;
       const lastMsg = lastMessageMap.get(app.id);
+
+      const rawCreatedAt = lastMsg?.createdAt ?? lastMsg?.createdat ?? lastMsg?.created_at ?? null;
+      const rawSenderId = lastMsg?.senderId ?? lastMsg?.senderid ?? lastMsg?.sender_id ?? '';
+      const rawIsRead = lastMsg?.isRead ?? lastMsg?.isread ?? lastMsg?.is_read ?? false;
 
       return {
         applicationId: app.id,
-        startupTitle: app.requirement.startupIdea.title,
+        startupTitle: app.requirement?.startupIdea?.title ?? '',
         otherUser: {
-          id: otherUser.id,
-          fullName: otherUser.fullName,
-          photo: otherUser.profile.photoUrl,
+          id: otherUser?.id ?? '',
+          fullName: otherUser?.fullName ?? 'Unknown',
+          photo: otherUser?.profile?.photoUrl ?? null,
         },
         lastMessage: lastMsg
           ? {
               id: lastMsg.id,
               content: lastMsg.content,
-              senderId: lastMsg.senderId,
-              isRead: lastMsg.isRead,
-              createdAt: lastMsg.createdAt,
+              senderId: rawSenderId,
+              isRead: Boolean(rawIsRead),
+              createdAt: rawCreatedAt ? new Date(rawCreatedAt).toISOString() : null,
             }
           : null,
         unreadCount: unreadMap[app.id] ?? 0,
       };
     });
 
-    return conversationList.sort(
-      (a, b) =>
-        new Date(b.lastMessage?.createdAt ?? 0).getTime() -
-        new Date(a.lastMessage?.createdAt ?? 0).getTime(),
-    );
+    const sortedList = conversationList.sort((a, b) => {
+      const timeA = a.lastMessage?.createdAt ? new Date(a.lastMessage.createdAt).getTime() : 0;
+      const timeB = b.lastMessage?.createdAt ? new Date(b.lastMessage.createdAt).getTime() : 0;
+      return timeB - timeA;
+    });
+
+    return sortedList;
   }
 }

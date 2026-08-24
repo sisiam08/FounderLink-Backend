@@ -4,42 +4,33 @@ import {
   InternalServerErrorException,
 } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
-import nodemailer from 'nodemailer';
-import type { Transporter } from 'nodemailer';
+import sgMail from '@sendgrid/mail';
 import { OtpPurpose } from '../auth/entities/otp.entity';
+
+interface SendGridError {
+  message?: string;
+  response?: { body?: { errors?: Array<{ message?: string }> } };
+}
 
 @Injectable()
 export class MailService {
-  private transporter: Transporter | null = null;
+  private initialized = false;
 
   constructor(private readonly configService: ConfigService) {}
 
-  private getTransporter(): Transporter {
-    if (this.transporter) return this.transporter;
-
-    this.transporter = nodemailer.createTransport({
-      host: this.configService.getOrThrow<string>('SMTP_HOST'),
-      port: Number(this.configService.getOrThrow<string>('SMTP_PORT')),
-      secure: Boolean(this.configService.getOrThrow<string>('SMTP_SECURE')),
-      auth: {
-        user: this.configService.getOrThrow<string>('SMTP_USER'),
-        pass: this.configService.getOrThrow<string>('SMTP_PASS'),
-      },
-    });
-
-    return this.transporter;
+  private initSendGrid(): void {
+    if (this.initialized) return;
+    sgMail.setApiKey(
+      this.configService.getOrThrow<string>('SENDGRID_API_KEY'),
+    );
+    this.initialized = true;
   }
 
-  async sendOTPMail(
-    to: string,
-    code: string,
-    purpose: OtpPurpose,
-  ): Promise<void> {
+  private buildMail(to: string, code: string, purpose: OtpPurpose) {
     const fromName = this.configService.getOrThrow<string>('MAIL_FROM_NAME');
     const fromEmail = this.configService.getOrThrow<string>('MAIL_FROM_EMAIL');
 
     const expiry = this.configService.getOrThrow<string>('OTP_EXPIRES_IN');
-
     const expiryInMin = parseInt(expiry, 10);
 
     const subject =
@@ -65,18 +56,32 @@ export class MailService {
       </div>
     `;
 
+    return { from: `${fromName} <${fromEmail}>`, to, subject, text, html };
+  }
+
+  private extractError(error: SendGridError): string {
+    const errors = error.response?.body?.errors;
+    if (errors && errors.length > 0) {
+      return errors.map((e) => e.message).filter(Boolean).join(', ');
+    }
+    return error.message || String(error);
+  }
+
+  async sendOTPMail(
+    to: string,
+    code: string,
+    purpose: OtpPurpose,
+  ): Promise<void> {
     try {
-      const transporter = this.getTransporter();
-      await transporter.sendMail({
-        from: `${fromName} <${fromEmail}>`,
-        to,
-        subject,
-        text,
-        html,
-      });
+      this.initSendGrid();
+      await sgMail.send(this.buildMail(to, code, purpose));
     } catch (error) {
       if (error instanceof HttpException) throw error;
-      throw new InternalServerErrorException('Failed to send OTP email');
+      const err = error as SendGridError;
+      const message = this.extractError(err);
+      throw new InternalServerErrorException(
+        `Failed to send OTP email: ${message}`,
+      );
     }
   }
 }

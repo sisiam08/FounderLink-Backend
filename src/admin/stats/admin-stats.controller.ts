@@ -1,33 +1,34 @@
-import { Controller, Get, Query, UseGuards } from '@nestjs/common'; // NestJS কন্ট্রোলার ও ডেকোরেটর
-import { JwtAuthGuard } from '../../common/guards/jwt-auth.guard';
-import { RolesGuard } from '../../common/guards/roles.guard';
+import { Controller, Get, Query, UseGuards } from '@nestjs/common';
 import { Roles } from '../../common/decorators/roles.decorator';
+import { SystemRole } from '../../user/entities/user.entity';
 import { AdminStatsService } from './admin-stats.service';
-import { SystemRole } from 'src/user/entities/user.entity';
 
 @Controller('admin/stats')
-@UseGuards(JwtAuthGuard, RolesGuard)
-@Roles(SystemRole.SUPER_ADMIN, SystemRole.ADMIN)
+@Roles(SystemRole.ADMIN, SystemRole.SUPER_ADMIN)
 export class AdminStatsController {
-  constructor(private readonly statsService: AdminStatsService) {}
+  constructor(private readonly statsService: AdminStatsService) {} 
 
-  @Get('overview')
+  @Get('overview') 
   async getOverview() {
+    
     return this.statsService.getOverview();
   }
 
-  @Get('users')
+  @Get('users') 
   async getUserSignups(@Query('from') from?: string, @Query('to') to?: string) {
+    
     return this.statsService.getUserSignups(from, to);
   }
 
-  @Get('applications')
+  @Get('applications') 
   async getApplicationStats() {
+    
     return this.statsService.getApplicationStats();
   }
 
-  @Get('requirements')
+  @Get('requirements') 
   async getRequirementStats() {
+
     return this.statsService.getRequirementStats();
   }
 }

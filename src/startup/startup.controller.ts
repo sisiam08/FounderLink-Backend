@@ -16,6 +16,7 @@ import { UpdateStartupDto } from './dto/update-startup.dto';
 import { StartupService } from './startup.service';
 import { Roles } from 'src/common/decorators/roles.decorator';
 import { SystemRole } from 'src/user/entities/user.entity';
+import type { AuthenticatedUser } from 'src/auth/interfaces/auth.interface';
 
 @Controller('startups')
 export class StartupController {
@@ -68,18 +69,18 @@ export class StartupController {
     @Param('id', new ParseUUIDPipe(
       { version:'4'}))
     id: string,
-    @CurrentUser('userId') userId: string,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.startupService.closeStartup(id, userId);
+    return this.startupService.closeStartup(id, user.userId, user.systemRole);
   }
 
 @Delete(':id')
   deleteStartup(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: string,
-    @CurrentUser('userId') userId: string,
+    @CurrentUser() user: AuthenticatedUser,
   ) {
-    return this.startupService.deleteStartup(id, userId);
+    return this.startupService.deleteStartup(id, user.userId, user.systemRole);
   }
 
   @Post(':ideaId/requirements')
@@ -96,7 +97,7 @@ export class StartupController {
     );
   }
 
-  // for admin
+  
 @Roles(SystemRole.SUPER_ADMIN,SystemRole.ADMIN)
 @Get('all')
   async listStartups(

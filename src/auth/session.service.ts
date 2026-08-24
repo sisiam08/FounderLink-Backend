@@ -94,13 +94,6 @@ export class SessionService {
     return session;
   }
 
-  async getUserSessions(userId: string) {
-    return this.sessionRepo.find({
-      where: { user: { id: userId }, revoked: false },
-      order: { createdAt: 'DESC' },
-    });
-  }
-
   async revokeSession(sessionId: string): Promise<boolean> {
     const result = await this.sessionRepo.update(sessionId, { revoked: true });
     if (result.affected === 0) {
@@ -121,6 +114,16 @@ export class SessionService {
     );
   }
 
+  async getSessionById(sessionId: string): Promise<UserSession> {
+    const session = await this.sessionRepo.findOne({
+      where: { id: sessionId },
+    });
+    if (!session) {
+      throw new UnauthorizedException('Session not found');
+    }
+    return session;
+  }
+
   async getActiveSessions(userId: string): Promise<UserSession[]> {
     return await this.sessionRepo.find({
       where: {
@@ -130,6 +133,13 @@ export class SessionService {
       order: {
         createdAt: 'DESC',
       },
+    });
+  }
+
+  async getUserSessions(userId: string): Promise<UserSession[]> {
+    return this.sessionRepo.find({
+      where: { user: { id: userId }, revoked: false },
+      order: { createdAt: 'DESC' },
     });
   }
 }

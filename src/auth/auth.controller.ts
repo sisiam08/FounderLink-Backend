@@ -1,7 +1,9 @@
 import {
   Body,
   Controller,
+  Delete,
   Get,
+  Param,
   Patch,
   Post,
   Req,
@@ -10,7 +12,6 @@ import {
 } from '@nestjs/common';
 import { AuthService } from './auth.service';
 import { SignupDto } from './dto/signup.dto';
-import { User } from '../user/entities/user.entity';
 import type {
   AuthenticatedUser,
   AuthResult,
@@ -25,6 +26,7 @@ import { VerifyOtpDto } from './dto/verify-otp.dto';
 import { ForgotPasswordDto } from './dto/forgot-password.dto';
 import { ResetPasswordDto } from './dto/reset-password.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
+import { User } from 'src/user/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
@@ -85,7 +87,7 @@ export class AuthController {
 
   @Public()
   @Post('refresh')
-  async refresh(@Req() req: Request): Promise<{ accessToken: string }> {
+  async refresh(@Req() req: Request): Promise<{ user: Partial<User>; accessToken: string }> {
     const refreshToken = req.cookies.refreshToken as string;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh Token Missing');
@@ -145,5 +147,18 @@ export class AuthController {
   @Get('active-sessions')
   async getActiveSessions(@CurrentUser() user: AuthenticatedUser) {
     return this.authService.getActiveSessions(user.userId);
+  }
+
+  @Get('me')
+  async getMe(@CurrentUser() user: AuthenticatedUser): Promise<Partial<User>> {
+    return this.authService.getMe(user.userId);
+  }
+
+  @Delete('sessions/:id')
+  async revokeSession(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.authService.revokeSession(id, userId);
   }
 }

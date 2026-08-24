@@ -62,6 +62,14 @@ export class RequirementController {
     return this.requirementService.getRequirementById(id, userId);
   }
 
+  @Get(':id/applications')
+  async getApplications(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
+    return this.requirementService.getApplicationsForRequirement(id, userId);
+  }
+
   @Get('requirements-list')
   @Roles(SystemRole.ADMIN, SystemRole.SUPER_ADMIN)
   async listRequirements(@Query('status') status?: string,@Query('role') role?: string,@Query('page') page?: string,@Query('limit') limit?: string) {
