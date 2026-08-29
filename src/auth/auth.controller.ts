@@ -35,20 +35,37 @@ export class AuthController {
     private readonly configService: ConfigService,
   ) {}
 
-  private getCookieOptions(): CookieOptions {
+  private async setCookies(
+    res: Response,
+    accessToken: string,
+    refreshToken?: string,
+  ): Promise<void> {
     const isProd =
       this.configService.getOrThrow<string>('NODE_ENV') === 'production';
 
-    return {
+    res.cookie('acessToken', accessToken, {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
       maxAge: ms(
         this.configService.getOrThrow<string>(
-          'JWT_REFRESH_EXPIRES_IN',
+          'JWT_ACCESS_EXPIRES_IN',
         ) as ms.StringValue,
       ),
-    };
+    });
+
+    if (refreshToken) {
+      res.cookie('refreshToken', refreshToken, {
+        httpOnly: true,
+        secure: isProd,
+        sameSite: isProd ? 'none' : 'lax',
+        maxAge: ms(
+          this.configService.getOrThrow<string>(
+            'JWT_REFRESH_EXPIRES_IN',
+          ) as ms.StringValue,
+        )
+      });
+    }
   }
 
   @Public()
@@ -71,28 +88,32 @@ export class AuthController {
     @Body() payload: LoginDto,
     @Req() req: Request,
     @Res({ passthrough: true }) res: Response,
-  ): Promise<Pick<AuthResult, 'user' | 'accessToken'>> {
+  ): Promise<Partial<User>> {
     const result = await this.authService.login(payload, {
       ipAddress: req.ip,
       userAgent: req.get('User-Agent'),
     });
 
-    res.cookie('refreshToken', result.refreshToken, this.getCookieOptions());
+    await this.setCookies(res, result.accessToken, result.refreshToken);
 
-    return {
-      user: result.user,
-      accessToken: result.accessToken,
-    };
+    return result.user;
   }
 
   @Public()
   @Post('refresh')
-  async refresh(@Req() req: Request): Promise<{ user: Partial<User>; accessToken: string }> {
+  async refresh(
+    @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
+  ): Promise<Partial<User>> {
     const refreshToken = req.cookies.refreshToken as string;
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh Token Missing');
     }
-    return await this.authService.rotateRefreshToken(refreshToken);
+    const result = await this.authService.rotateRefreshToken(refreshToken);
+
+    await this.setCookies(res, result.accessToken);
+
+    return result.user;
   }
 
   @Post('logout')
