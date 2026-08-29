@@ -6,6 +6,7 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { Repository } from 'typeorm';
 import { AuthenticatedUser, JwtPayload } from '../interfaces/auth.interface';
 import { UserSession } from '../entities/user-session.entity';
+import { Request } from 'express';
 
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
@@ -15,7 +16,11 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     private readonly sessionRepo: Repository<UserSession>,
   ) {
     super({
-      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
+      jwtFromRequest: ExtractJwt.fromExtractors([
+        (req: Request) => {
+          return req.cookies?.accessToken ?? null;
+        },
+      ]),
       ignoreExpiration: false,
       secretOrKey: configService.getOrThrow<string>('JWT_ACCESS_SECRET'),
     });
