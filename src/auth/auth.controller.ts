@@ -43,7 +43,7 @@ export class AuthController {
     const isProd =
       this.configService.getOrThrow<string>('NODE_ENV') === 'production';
 
-    res.cookie('acessToken', accessToken, {
+    res.cookie('accessToken', accessToken, {
       httpOnly: true,
       secure: isProd,
       sameSite: isProd ? 'none' : 'lax',
@@ -63,7 +63,7 @@ export class AuthController {
           this.configService.getOrThrow<string>(
             'JWT_REFRESH_EXPIRES_IN',
           ) as ms.StringValue,
-        )
+        ),
       });
     }
   }
