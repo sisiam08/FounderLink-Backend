@@ -197,7 +197,7 @@ export class AuthService {
     }
   }
 
-  async rotateRefreshToken(
+  async refreshAccessToken(
     refreshToken: string,
   ): Promise<{ user: Partial<User>; accessToken: string }> {
     try {

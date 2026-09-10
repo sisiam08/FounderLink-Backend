@@ -112,7 +112,7 @@ export class ProfileService {
 
     const profile = await this.getMyProfile(userId);
 
-    profile.photoUrl = file.path.replace(/\\/g, '/');
+    profile.photoUrl = `/uploads/profile/${file.filename}`;
 
     return await this.profileRepo.save(profile);
   }

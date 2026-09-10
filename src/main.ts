@@ -1,13 +1,15 @@
 import { NestFactory } from '@nestjs/core';
+import { NestExpressApplication } from '@nestjs/platform-express';
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
 import cookieParser from 'cookie-parser';
 import { HttpExceptionFilter } from './common/filters/http-exception.filter';
 import { ResponseInterceptor } from './common/interceptors/response.interceptor';
 import { ConfigService } from '@nestjs/config';
+import * as path from 'path';
 
 async function bootstrap() {
-  const app = await NestFactory.create(AppModule);
+  const app = await NestFactory.create<NestExpressApplication>(AppModule);
   app.setGlobalPrefix('api/v1');
 
   const configService = app.get(ConfigService);
@@ -19,6 +21,10 @@ async function bootstrap() {
   });
 
   app.use(cookieParser());
+
+  app.useStaticAssets(path.join(process.cwd(), 'src', 'uploads'), {
+    prefix: '/uploads',
+  });
 
   app.useGlobalPipes(
     new ValidationPipe({

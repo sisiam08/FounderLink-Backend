@@ -68,6 +68,23 @@ export class AuthController {
     }
   }
 
+  private async clearCookies(res: Response): Promise<void> {
+    const isProd =
+      this.configService.getOrThrow<string>('NODE_ENV') === 'production';
+
+    res.clearCookie('accessToken', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+    });
+
+    res.clearCookie('refreshToken', {
+      httpOnly: true,
+      secure: isProd,
+      sameSite: isProd ? 'none' : 'lax',
+    });
+  }
+
   @Public()
   @Post('signup')
   async signup(
@@ -109,7 +126,7 @@ export class AuthController {
     if (!refreshToken) {
       throw new UnauthorizedException('Refresh Token Missing');
     }
-    const result = await this.authService.rotateRefreshToken(refreshToken);
+    const result = await this.authService.refreshAccessToken(refreshToken);
 
     await this.setCookies(res, result.accessToken);
 
@@ -120,6 +137,7 @@ export class AuthController {
   async logout(
     @CurrentUser() user: AuthenticatedUser,
     @Req() req: Request,
+    @Res({ passthrough: true }) res: Response,
   ): Promise<{ message: string }> {
     const refreshToken = req.cookies.refreshToken as string;
     if (!refreshToken) {
@@ -129,6 +147,7 @@ export class AuthController {
     if (!result) {
       throw new UnauthorizedException('Logout Failed');
     }
+    await this.clearCookies(res);
 
     return {
       message: 'Logout successful',
