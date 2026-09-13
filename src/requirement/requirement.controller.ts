@@ -20,16 +20,24 @@ export class RequirementController {
   constructor(private readonly requirementService: RequirementService) {}
 
   @Post('startup/:ideaId')
-  async create(@Param('ideaId') ideaId: string,@Body() dto: CreateRequirementDto,@CurrentUser('userId') userId: string,) {
+  async create(
+    @Param('ideaId') ideaId: string,
+    @Body() dto: CreateRequirementDto,
+    @CurrentUser('userId') userId: string,
+  ) {
     return this.requirementService.createRequirement(ideaId, userId, dto);
   }
   @Patch(':id')
-  async update(@Param('id') id: string,@Body() dto: UpdateRequirementDto,@CurrentUser('userId') userId: string,) {
+  async update(
+    @Param('id') id: string,
+    @Body() dto: UpdateRequirementDto,
+    @CurrentUser('userId') userId: string,
+  ) {
     return this.requirementService.updateRequirement(id, userId, dto);
   }
 
   @Post(':id/apply')
-  async apply(@Param('id') id: string,@CurrentUser('userId') userId: string,) {
+  async apply(@Param('id') id: string, @CurrentUser('userId') userId: string) {
     return this.requirementService.apply(id, userId);
   }
 
@@ -38,8 +46,6 @@ export class RequirementController {
     return this.requirementService.closeRequirement(id, userId);
   }
 
-  
-
   @Delete(':id')
   async delete(@Param('id') id: string, @CurrentUser('userId') userId: string) {
     await this.requirementService.deleteRequirement(id, userId);
@@ -47,7 +53,13 @@ export class RequirementController {
   }
 
   @Get('browse')
-  async browse(@CurrentUser('userId') userId: string,@Query('cursor') cursor?: { createdAt: string; id: string },@Query('role') role?: string,@Query('industry') industry?: string,@Query('stage') stage?: string,) {
+  async browse(
+    @CurrentUser('userId') userId: string,
+    @Query('cursor') cursor?: { createdAt: string; id: string },
+    @Query('role') role?: string,
+    @Query('industry') industry?: string,
+    @Query('stage') stage?: string,
+  ) {
     return this.requirementService.browseRequirements(
       userId,
       cursor,
@@ -57,8 +69,27 @@ export class RequirementController {
     );
   }
 
+  @Get('requirements-list')
+  @Roles(SystemRole.ADMIN, SystemRole.SUPER_ADMIN)
+  async listRequirements(
+    @Query('status') status?: string,
+    @Query('role') role?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.requirementService.listRequirements(
+      status,
+      role,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
+  }
+
   @Get(':id')
-  async getById(@Param('id') id: string,@CurrentUser('userId') userId: string,) {
+  async getById(
+    @Param('id') id: string,
+    @CurrentUser('userId') userId: string,
+  ) {
     return this.requirementService.getRequirementById(id, userId);
   }
 
@@ -70,21 +101,12 @@ export class RequirementController {
     return this.requirementService.getApplicationsForRequirement(id, userId);
   }
 
-  @Get('requirements-list')
-  @Roles(SystemRole.ADMIN, SystemRole.SUPER_ADMIN)
-  async listRequirements(@Query('status') status?: string,@Query('role') role?: string,@Query('page') page?: string,@Query('limit') limit?: string) {
-    return this.requirementService.listRequirements(
-      status,
-      role,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 20,
-    );
-  }
-
-
   @Patch('requirements/:id/close')
   @Roles(SystemRole.ADMIN, SystemRole.SUPER_ADMIN)
-  async forceCloseRequirement(@Param('id') id: string,@CurrentUser('userId') adminId: string) {
+  async forceCloseRequirement(
+    @Param('id') id: string,
+    @CurrentUser('userId') adminId: string,
+  ) {
     return this.requirementService.forceCloseRequirement(id, adminId);
   }
 }
