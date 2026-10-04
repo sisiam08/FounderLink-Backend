@@ -46,7 +46,9 @@ export class MessageGateway implements OnGatewayConnection {
     try {
       const auth = client.handshake.auth as Record<string, unknown>;
       const accessToken =
-        typeof auth.accessToken === 'string' ? auth.accessToken : null;
+        typeof auth.accessToken === 'string'
+          ? auth.accessToken
+          : this.getCookie(client.handshake.headers.cookie, 'accessToken');
 
       if (!accessToken) {
         throw new UnauthorizedException('Authorization token missing');
@@ -80,6 +82,14 @@ export class MessageGateway implements OnGatewayConnection {
       });
       client.disconnect();
     }
+  }
+
+  private getCookie(cookieHeader: string | undefined, name: string): string | null {
+    const cookie = cookieHeader
+      ?.split(';')
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(`${name}=`));
+    return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : null;
   }
 
   @SubscribeMessage('join-room')
@@ -150,7 +160,6 @@ export class MessageGateway implements OnGatewayConnection {
       };
     }
 
-    // Auto-join room if not joined yet
     if (!client.data.joinedApplications) {
       client.data.joinedApplications = new Set<string>();
     }

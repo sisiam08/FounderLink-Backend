@@ -37,7 +37,9 @@ export class NotificationGateway implements OnGatewayConnection {
     try {
       const auth = client.handshake.auth as Record<string, unknown>;
       const accessToken =
-        typeof auth.accessToken === 'string' ? auth.accessToken : null;
+        typeof auth.accessToken === 'string'
+          ? auth.accessToken
+          : this.getCookie(client.handshake.headers.cookie, 'accessToken');
 
       if (!accessToken) {
         throw new UnauthorizedException('Authorization token missing');
@@ -72,6 +74,14 @@ export class NotificationGateway implements OnGatewayConnection {
       });
       client.disconnect();
     }
+  }
+
+  private getCookie(cookieHeader: string | undefined, name: string): string | null {
+    const cookie = cookieHeader
+      ?.split(';')
+      .map((part) => part.trim())
+      .find((part) => part.startsWith(`${name}=`));
+    return cookie ? decodeURIComponent(cookie.slice(name.length + 1)) : null;
   }
 
   emitNotification(userId: string, notification: Notification): void {

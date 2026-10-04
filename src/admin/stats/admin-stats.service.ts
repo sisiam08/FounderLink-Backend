@@ -25,6 +25,11 @@ interface RawAvgRow {
   avg: string | null;
 }
 
+interface RawStatusRow {
+  status: string;
+  count: string;
+}
+
 @Injectable() 
 export class AdminStatsService {
   constructor(
@@ -50,6 +55,8 @@ export class AdminStatsService {
       closedRequirements,
       messages,
       activeSessions,
+      userStatusRows,
+      startupStatusRows,
     ] = await Promise.all([
       this.userRepo.count(),
       this.startupRepo.count(),
@@ -59,6 +66,18 @@ export class AdminStatsService {
       }),
       this.messageRepo.count(),
       this.sessionRepo.count({ where: { revoked: false } }),
+      this.userRepo
+        .createQueryBuilder('user')
+        .select('user.status', 'status')
+        .addSelect('COUNT(*)', 'count')
+        .groupBy('user.status')
+        .getRawMany<RawStatusRow>(),
+      this.startupRepo
+        .createQueryBuilder('startup')
+        .select('startup.status', 'status')
+        .addSelect('COUNT(*)', 'count')
+        .groupBy('startup.status')
+        .getRawMany<RawStatusRow>(),
     ]);
 
     
@@ -77,6 +96,26 @@ export class AdminStatsService {
       {} as Record<string, number>,
     );
 
+    const usersByStatus = userStatusRows.reduce(
+      (acc, row) => {
+        acc[row.status] = parseInt(row.count, 10);
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+    const startupsByStatus = startupStatusRows.reduce(
+      (acc, row) => {
+        acc[row.status] = parseInt(row.count, 10);
+        return acc;
+      },
+      {} as Record<string, number>,
+    );
+    const applicationTotal = Object.values(applications).reduce(
+      (sum, count) => sum + count,
+      0,
+    );
+    const acceptedApplications = applications.accepted ?? 0;
+
     return {
       users,
       startups,
@@ -84,6 +123,15 @@ export class AdminStatsService {
       applications,
       messages,
       activeSessions,
+      usersByStatus,
+      startupsByStatus,
+      applicationSummary: {
+        total: applicationTotal,
+        accepted: acceptedApplications,
+        acceptanceRate: applicationTotal
+          ? Math.round((acceptedApplications / applicationTotal) * 100)
+          : 0,
+      },
     };
   }
 

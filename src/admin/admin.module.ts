@@ -6,6 +6,7 @@ import { StartupIdea } from '../startup/entities/startup-idea.entity';
 import { CofounderRequirement } from '../requirement/entities/cofounder-requirement.entity';
 import { Application } from '../application/entities/application.entity';
 import { Message } from '../message/entities/message.entity';
+import { Notification } from '../notification/entities/notification.entity';
 import { AdminStatsService } from './stats/admin-stats.service';
 import { AdminStatsController } from './stats/admin-stats.controller';
 

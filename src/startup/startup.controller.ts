@@ -30,51 +30,55 @@ export class StartupController {
     return this.startupService.createStartup(userId, createStartupDto);
   }
 
-
-@Get('mine')
-  getMyStartups(
-    @CurrentUser('userId') userId:string,
-  ) {
+  @Get('mine')
+  getMyStartups(@CurrentUser('userId') userId: string) {
     return this.startupService.getMyStartups(userId);
   }
 
- @Get(':id')
+  @Roles(SystemRole.SUPER_ADMIN, SystemRole.ADMIN)
+  @Get('all')
+  async listStartups(
+    @Query('status') status?: string,
+    @Query('search') search?: string,
+    @Query('page') page?: string,
+    @Query('limit') limit?: string,
+  ) {
+    return this.startupService.listStartups(
+      status,
+      search,
+      page ? parseInt(page, 10) : 1,
+      limit ? parseInt(limit, 10) : 20,
+    );
+  }
+
+  @Get(':id')
   getStartupById(
-    @Param('id', new ParseUUIDPipe(
-      { version:'4'}))
+    @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: string,
   ) {
     return this.startupService.getStartupById(id);
   }
 
-
- @Patch(':id')
+  @Patch(':id')
   updateStartup(
-    @Param('id', new ParseUUIDPipe(
-      { version: '4' }))
+    @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: string,
     @CurrentUser('userId') userId: string,
     @Body() updateStartupDto: UpdateStartupDto,
   ) {
-    return this.startupService.updateStartup(
-      id,
-      userId,
-      updateStartupDto,
-    );
+    return this.startupService.updateStartup(id, userId, updateStartupDto);
   }
 
-
-   @Patch(':id/close')
+  @Patch(':id/close')
   closeStartup(
-    @Param('id', new ParseUUIDPipe(
-      { version:'4'}))
+    @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: string,
     @CurrentUser() user: AuthenticatedUser,
   ) {
     return this.startupService.closeStartup(id, user.userId, user.systemRole);
   }
 
-@Delete(':id')
+  @Delete(':id')
   deleteStartup(
     @Param('id', new ParseUUIDPipe({ version: '4' }))
     id: string,
@@ -96,27 +100,4 @@ export class StartupController {
       createRequirementDto,
     );
   }
-
-  
-@Roles(SystemRole.SUPER_ADMIN,SystemRole.ADMIN)
-@Get('all')
-  async listStartups(
-    @Query('status') status?: string,
-    @Query('search') search?: string,
-    @Query('page') page?: string,
-    @Query('limit') limit?: string,
-  ) {
-    return this.startupService.listStartups(
-      status,
-      search,
-      page ? parseInt(page, 10) : 1,
-      limit ? parseInt(limit, 10) : 20,
-    );
-  }
-
-
-
-
-
-
 }

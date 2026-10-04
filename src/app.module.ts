@@ -13,6 +13,7 @@ import { RequirementModule } from './requirement/requirement.module';
 import { StartupModule } from './startup/startup.module';
 import { UserModule } from './user/user.module';
 import { ApplicationModule } from './application/application.module';
+import { AdminModule } from './admin/admin.module';
 
 @Module({
   imports: [
@@ -52,7 +53,8 @@ import { ApplicationModule } from './application/application.module';
     StartupModule,
     ProfileModule,
     UserModule,
-    ApplicationModule
+    ApplicationModule,
+    AdminModule,
   ],
   controllers: [AppController],
 
